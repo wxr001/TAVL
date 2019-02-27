@@ -36,12 +36,24 @@
 
 #include <type_traits>
 
-namespace Compiler
+namespace tavl
 {
+    /**
+     * @brief struct to express the relationship of two types
+     * @tparam L left-hand-side of two types being compared
+     * @tparam R right-hand-side of two types being compared
+     * @note A static constexpr variable with type int should be defined. Less
+     * than zero value means less-than relationship. Greater than zero value
+     * means greater-than relationship, zero means equality. See test.cpp for
+     * more information.
+     * @note You should be sure that this struct is properly specialized for
+     * every two key types passed as L and R.
+     */
     template <typename L, typename R>
     struct compare;
     template <typename L, typename R>
     static constexpr int compare_v = compare<L, R>::value;
+    // for lazy evaluation
     template <typename T>
     struct identity
     {
@@ -61,6 +73,10 @@ namespace Compiler
         struct invalid;
     } // namespace Impl
 
+    /**
+     * @brief empty_node should be used when there is no node(empty tree) or no
+     * children.
+     */
     struct empty_node
     {
         using left                  = empty_node;
@@ -73,6 +89,15 @@ namespace Compiler
     struct value : public identity<V>
     {
     };
+    /**
+     * @brief node definition for AVL tree
+     * @tparam L left child
+     * @tparam R right child
+     * @tparam H height of this tree
+     * @tparam K key. Note that compare should be properly specialized for all
+     * keys.
+     * @tparam V value
+     */
     template <typename L,
               typename R,
               int H,
@@ -86,6 +111,12 @@ namespace Compiler
         using key                   = K;
         using value                 = V;
     };
+    /**
+     * @brief find an element whose key is K. Result is wrapped with value
+     * struct if found, value<not_found> otherwise.
+     * @tparam T AVL tree
+     * @tparam K key type
+     */
     template <typename T, typename K>
     struct tavl_find
     {
@@ -117,11 +148,23 @@ namespace Compiler
     {
         using type = value<>;
     };
+    /**
+     * @brief find an element whose key is K. Result is wrapped with value
+     * struct if found, value<not_found> otherwise.
+     * @tparam T AVL tree
+     * @tparam K key type
+     */
     template <typename T, typename K>
     using tavl_find_t = typename tavl_find<T, K>::type;
+    // check whether there is an element whose key is K in the given AVL tree T
     template <typename T, typename K>
     static constexpr bool tavl_contain_v =
         !std::is_same_v<tavl_find_t<T, K>, value<>>;
+    /**
+     * @brief get the minimal element in the given AVL tree, or empty_node if
+     * there is no such element.
+     * @tparam T AVL tree
+     */
     template <typename T>
     struct tavl_min
     {
@@ -143,8 +186,18 @@ namespace Compiler
     {
         using type = empty_node;
     };
+    /**
+     * @brief get the minimal element in the given AVL tree, or empty_node if
+     * there is no such element.
+     * @tparam T AVL tree
+     */
     template <typename T>
     using tavl_min_t = typename tavl_min<T>::type;
+    /**
+     * @brief get the maximal element in the given AVL tree, or empty_node if
+     * there is no such element.
+     * @tparam T AVL tree
+     */
     template <typename T>
     struct tavl_max
     {
@@ -166,8 +219,16 @@ namespace Compiler
     {
         using type = empty_node;
     };
+    /**
+     * @brief get the maximal element in the given AVL tree, or empty_node if
+     * there is no such element.
+     * @tparam T AVL tree
+     */
     template <typename T>
     using tavl_max_t = typename tavl_max<T>::type;
+    /**
+     * @brief insert an (K, V) element into given AVL tree T
+     */
     template <typename T, typename K, typename V = std::true_type>
     struct tavl_insert
     {
@@ -254,8 +315,14 @@ namespace Compiler
     {
         using type = tavl_node<empty_node, empty_node, 0, K, V>;
     };
+    /**
+     * @brief insert an (K, V) element into given AVL tree T
+     */
     template <typename T, typename K, typename V = std::true_type>
     using tavl_insert_t = typename tavl_insert<T, K, V>::type;
+    /**
+     * @brief try to remopve the element whose key is K
+     */
     template <typename T, typename K>
     struct tavl_remove
     {
@@ -372,6 +439,9 @@ namespace Compiler
     {
         using type = empty_node;
     };
+    /**
+     * @brief try to remopve the element whose key is K
+     */
     template <typename T, typename K>
     using tavl_remove_t = typename tavl_remove<T, K>::type;
     namespace Impl
@@ -445,537 +515,5 @@ namespace Compiler
         {
         };
     } // namespace Impl
-#ifdef IN_HEADER_DEBUG
-    // for tests only
-    template <typename T, T lhs, T rhs>
-    struct compare<std::integral_constant<T, lhs>,
-                   std::integral_constant<T, rhs>>
-    {
-        static constexpr int value = lhs - rhs;
-    };
-    template <int val>
-    using int_v = std::integral_constant<int, val>;
-    namespace InHeaderDebug
-    {
-        //  tree          height
-        //    5             2
-        //  2   8           1
-        // 1 3 7 9          0
-        // key: node index
-        // value: node index
-        using test_avl_template = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_find_input    = test_avl_template;
-        using test_contain_input = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<0>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<0>>,
-                      1,
-                      int_v<2>,
-                      int_v<1>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<0>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<0>>,
-                      1,
-                      int_v<8>,
-                      int_v<1>>,
-            2,
-            int_v<5>,
-            int_v<2>>;
-        using test_insert_result_no_new = test_avl_template;
-        using test_insert_leftmost      = tavl_node<
-            tavl_node<empty_node,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_insert_rightmost = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      empty_node,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_insert_normal_1 = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      empty_node,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_insert_normal_2 = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<empty_node,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_insert_result_new = tavl_node<
-            tavl_node<
-                tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                tavl_node<
-                    empty_node,
-                    tavl_node<empty_node, empty_node, 0, int_v<4>, int_v<4>>,
-                    1,
-                    int_v<3>,
-                    int_v<3>>,
-                2,
-                int_v<2>,
-                int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            3,
-            int_v<5>,
-            int_v<5>>;
-        using test_insert_new                = test_avl_template;
-        using test_insert_result_rotate_left = tavl_node<
-            tavl_node<empty_node, empty_node, 0, int_v<2>, int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<4>, int_v<4>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<7>,
-                      int_v<7>>,
-            2,
-            int_v<3>,
-            int_v<3>>;
-        using test_insert_rotate_left = tavl_node<
-            tavl_node<empty_node, empty_node, 0, int_v<2>, int_v<2>>,
-            tavl_node<empty_node,
-                      tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      1,
-                      int_v<4>,
-                      int_v<4>>,
-            2,
-            int_v<3>,
-            int_v<3>>;
-        using test_insert_result_rotate_right =
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<2>, int_v<2>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<4>, int_v<4>>,
-                      1,
-                      int_v<3>,
-                      int_v<3>>;
-        using test_insert_rotate_right =
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      empty_node,
-                      1,
-                      int_v<4>,
-                      int_v<4>>;
-        using test_insert_result_double_left = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      empty_node,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<4>, int_v<4>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<8>, int_v<8>>,
-                      1,
-                      int_v<5>,
-                      int_v<5>>,
-            2,
-            int_v<3>,
-            int_v<3>>;
-        using test_insert_double_left = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<empty_node, empty_node, 0, int_v<8>, int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_insert_result_double_right = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<2>, int_v<2>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<6>, int_v<6>>,
-                      1,
-                      int_v<5>,
-                      int_v<5>>,
-            tavl_node<empty_node,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<7>,
-            int_v<7>>;
-        using test_insert_double_right = tavl_node<
-            tavl_node<empty_node, empty_node, 0, int_v<2>, int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_result_rotate_left = tavl_node<
-            tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      empty_node,
-                      1,
-                      int_v<5>,
-                      int_v<5>>,
-            2,
-            int_v<2>,
-            int_v<2>>;
-        using test_remove_rotate_left = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<empty_node, empty_node, 0, int_v<8>, int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_result_rotate_right = tavl_node<
-            tavl_node<empty_node,
-                      tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      1,
-                      int_v<5>,
-                      int_v<5>>,
-            tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-            2,
-            int_v<8>,
-            int_v<8>>;
-        using test_remove_rotate_right = tavl_node<
-            tavl_node<empty_node, empty_node, 0, int_v<2>, int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_result_double_left = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      empty_node,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<4>, int_v<4>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<8>, int_v<8>>,
-                      1,
-                      int_v<5>,
-                      int_v<5>>,
-            2,
-            int_v<3>,
-            int_v<3>>;
-        using test_remove_double_left = tavl_node<
-            tavl_node<
-                tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                tavl_node<
-                    empty_node,
-                    tavl_node<empty_node, empty_node, 0, int_v<4>, int_v<4>>,
-                    1,
-                    int_v<3>,
-                    int_v<3>>,
-                2,
-                int_v<2>,
-                int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      empty_node,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            3,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_result_double_right = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<2>, int_v<2>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<6>, int_v<6>>,
-                      1,
-                      int_v<5>,
-                      int_v<5>>,
-            tavl_node<empty_node,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<7>,
-            int_v<7>>;
-        using test_remove_double_right = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      empty_node,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<
-                tavl_node<
-                    tavl_node<empty_node, empty_node, 0, int_v<6>, int_v<6>>,
-                    empty_node,
-                    1,
-                    int_v<7>,
-                    int_v<7>>,
-                tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                2,
-                int_v<8>,
-                int_v<8>>,
-            3,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_no_rotate_input = test_avl_template;
-        using test_remove_result_leftmost = tavl_node<
-            tavl_node<empty_node,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_result_rightmost = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      empty_node,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_result_normal_1 = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      empty_node,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_result_normal_2 = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<empty_node,
-                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
-                      1,
-                      int_v<8>,
-                      int_v<8>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        using test_remove_result_branch = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      1,
-                      int_v<2>,
-                      int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      empty_node,
-                      1,
-                      int_v<9>,
-                      int_v<9>>,
-            2,
-            int_v<5>,
-            int_v<5>>;
-        inline namespace TestFind
-        {
-            static_assert(std::is_same_v<tavl_find_t<empty_node, int>, value<>>,
-                          "tavl_find for empty tree");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<5>>,
-                                         value<int_v<5>>>,
-                          "tavl_find for root");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<1>>,
-                                         value<int_v<1>>>,
-                          "tavl_find for the leftmost node");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<9>>,
-                                         value<int_v<9>>>,
-                          "tavl_find for the rightmost node");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<2>>,
-                                         value<int_v<2>>>,
-                          "tavl_find for non-leaf nodes");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<7>>,
-                                         value<int_v<7>>>,
-                          "tavl_find for normal leaves");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<3>>,
-                                         value<int_v<3>>>,
-                          "tavl_find for normal leaves");
-            static_assert(
-                std::is_same_v<tavl_find_t<test_find_input, int_v<10>>,
-                               value<>>,
-                "tavl_find for not existing keys");
-        } // namespace TestFind
-        inline namespace TestContain
-        {
-            static_assert(!tavl_contain_v<empty_node, int>,
-                          "tavl_contain for empty tree");
-            static_assert(tavl_contain_v<test_contain_input, int_v<5>>,
-                          "tavl_contain for root");
-            static_assert(tavl_contain_v<test_contain_input, int_v<1>>,
-                          "tavl_contain for the leftmost node");
-            static_assert(tavl_contain_v<test_contain_input, int_v<9>>,
-                          "tavl_contain for the rightmost node");
-            static_assert(tavl_contain_v<test_contain_input, int_v<2>>,
-                          "tavl_contain for non-leaf nodes");
-            static_assert(tavl_contain_v<test_contain_input, int_v<7>>,
-                          "tavl_contain for normal leaves");
-            static_assert(tavl_contain_v<test_contain_input, int_v<3>>,
-                          "tavl_contain for normal leaves");
-            static_assert(!tavl_contain_v<test_contain_input, int_v<0>>,
-                          "tavl_contain for not-existing keys");
-        } // namespace TestContain
-        inline namespace TestInsert
-        {
-            static_assert(
-                std::is_same_v<tavl_insert_t<empty_node, int, int>,
-                               tavl_node<empty_node, empty_node, 0, int, int>>,
-                "tavl_insert for empty tree");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_leftmost, int_v<1>, int_v<1>>,
-                    test_insert_result_no_new>,
-                "tavl_insert for leftmost nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_rightmost, int_v<9>, int_v<9>>,
-                    test_insert_result_no_new>,
-                "tavl_insert for rightmost nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_normal_1, int_v<3>, int_v<3>>,
-                    test_insert_result_no_new>,
-                "tavl_insert for normal nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_normal_2, int_v<7>, int_v<7>>,
-                    test_insert_result_no_new>,
-                "tavl_insert for normal nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_new, int_v<4>, int_v<4>>,
-                    test_insert_result_new>,
-                "tavl_insert for new branches");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_rotate_left, int_v<9>, int_v<9>>,
-                    test_insert_result_rotate_left>,
-                "tavl_insert for left-rotate");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_rotate_right, int_v<2>, int_v<2>>,
-                    test_insert_result_rotate_right>,
-                "tavl_insert for right-rotate");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_double_left, int_v<4>, int_v<4>>,
-                    test_insert_result_double_left>,
-                "tavl_insert for left-right");
-            static_assert(
-                std::is_same_v<
-                    tavl_insert_t<test_insert_double_right, int_v<6>, int_v<6>>,
-                    test_insert_result_double_right>,
-                "tavl_insert for right-left");
-        } // namespace TestInsert
-        inline namespace TestRemove
-        {
-            static_assert(
-                std::is_same_v<tavl_remove_t<test_avl_template, int_v<10>>,
-                               test_avl_template>,
-                "tavl_remove for not-existing nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_remove_t<test_remove_no_rotate_input, int_v<1>>,
-                    test_remove_result_leftmost>,
-                "tavl_remove for leftmost nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_remove_t<test_remove_no_rotate_input, int_v<9>>,
-                    test_remove_result_rightmost>,
-                "tavl_remove for rightmost nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_remove_t<test_remove_no_rotate_input, int_v<3>>,
-                    test_remove_result_normal_1>,
-                "tavl_remove for normal nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_remove_t<test_remove_no_rotate_input, int_v<7>>,
-                    test_remove_result_normal_2>,
-                "tavl_remove for normal nodes");
-            static_assert(
-                std::is_same_v<
-                    tavl_remove_t<test_remove_no_rotate_input, int_v<8>>,
-                    test_remove_result_branch>,
-                "tavl_remove for leftmost nodes");
-            static_assert(
-                std::is_same_v<tavl_remove_t<test_remove_rotate_left, int_v<8>>,
-                               test_remove_result_rotate_left>,
-                "tavl_remove for left-rotate");
-            static_assert(std::is_same_v<
-                              tavl_remove_t<test_remove_rotate_right, int_v<2>>,
-                              test_remove_result_rotate_right>,
-                          "tavl_remove for right-rotate");
-            static_assert(
-                std::is_same_v<tavl_remove_t<test_remove_double_left, int_v<7>>,
-                               test_remove_result_double_left>,
-                "tavl_remove for left-right");
-            static_assert(std::is_same_v<
-                              tavl_remove_t<test_remove_double_right, int_v<1>>,
-                              test_remove_result_double_right>,
-                          "tavl_remove for right-left");
-        } // namespace TestRemove
-    }     // namespace InHeaderDebug
-#endif
-} // namespace Compiler
+} // namespace tavl
 #endif
