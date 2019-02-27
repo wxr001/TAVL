@@ -79,6 +79,6 @@ script:
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       make all
     else
-      xcodebuild -quiet -target Acid -configuration $BUILD_TYPE
+      xcodebuild -quiet -target test -configuration $BUILD_TYPE
     fi
 - cd ../
