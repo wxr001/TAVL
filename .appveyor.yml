@@ -26,5 +26,4 @@ build_script:
   - mkdir Build\%BUILD_OUT% && cd Build\%BUILD_OUT%
   - cmake -DCMAKE_BUILD_TYPE=%CFG% -GNinja ../../
   - ninja
-  - ninja install
   - cd ../../
