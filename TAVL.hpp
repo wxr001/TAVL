@@ -210,7 +210,7 @@ namespace tavl
 
     public:
         using type =
-            typename std::conditional_t<std::is_same_v<T::right, empty_node>,
+            typename std::conditional_t<std::is_same_v<typename T::right, empty_node>,
                                         identity<T>,
                                         lazy<T>>::type;
     };
