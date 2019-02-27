@@ -1,0 +1,84 @@
+matrix:
+  include:
+  # GCC 7
+  - os: linux
+    dist: xenial
+    sudo: required
+    addons: &gcc7
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - g++-7
+        - ninja-build
+        - tree
+    language: cpp
+    compiler: gcc
+    env:
+    - COMPILER=g++-7
+    - GSL_CXX_STANDARD=17
+    - BUILD_TYPE=Release
+    before_install:
+    - sudo apt-get update -qq
+    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
+  # Clang 6.0
+  - os: linux
+    dist: xenial
+    sudo: required
+    addons: &clang60
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        - llvm-toolchain-xenial-6.0
+        - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main'
+          key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+        packages:
+        - clang-6.0
+        - g++-7
+        - ninja-build
+        - tree
+    language: cpp
+    compiler: clang
+    env:
+    - COMPILER=clang++-6.0
+    - GSL_CXX_STANDARD=17
+    - BUILD_TYPE=Release
+    before_install:
+    - sudo apt-get update -qq
+    - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 1000
+    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 1000
+    - clang --version
+  # XCode 10.0
+  - os: osx
+    osx_image: xcode10
+    sudo: required
+    language: cpp
+    compiler: clang
+    env:
+    - COMPILER=clang++
+    - GSL_CXX_STANDARD=17
+    - BUILD_TYPE=Release
+    before_install:
+    - export http_proxy='';
+    - brew update
+    - brew install tree
+    - brew install cmake || brew upgrade cmake
+    - brew install ninja
+
+script:
+- cd $TRAVIS_BUILD_DIR
+- mkdir Build && cd Build
+- |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+    else
+      cmake .. -G "Xcode" -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_SHARED_LIBS=OFF
+    fi
+- tree -d
+- |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      make all
+    else
+      xcodebuild -quiet -target Acid -configuration $BUILD_TYPE
+    fi
+- cd ../
