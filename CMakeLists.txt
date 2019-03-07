@@ -5,5 +5,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(TAVL)
 
-add_executable(test test.cpp)
+add_executable(test tests/test.cpp)
 
