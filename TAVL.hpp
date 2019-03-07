@@ -85,6 +85,8 @@ namespace tavl
         using key                   = void;
         using value                 = void;
     };
+    template <typename T>
+    static constexpr bool is_empty_node_v = std::is_same_v<T, empty_node>;
     template <typename V = Impl::not_found>
     struct value : public identity<V>
     {
@@ -320,6 +322,7 @@ namespace tavl
      */
     template <typename T, typename K, typename V = std::true_type>
     using tavl_insert_t = typename tavl_insert<T, K, V>::type;
+    
     /**
      * @brief try to remopve the element whose key is K
      */
@@ -444,6 +447,64 @@ namespace tavl
      */
     template <typename T, typename K>
     using tavl_remove_t = typename tavl_remove<T, K>::type;
+	/**
+	 * @brief default implementation of merging function for tavl_for_each
+	 */
+	template <typename Left, typename Right, typename Current>
+    struct tavl_for_each_default_merge
+    {
+        using type = std::void_t<Left, Right, Current>;
+    };
+    /**
+     * @brief apply F<key, value> and M<left-tree-result, right-tree-result,
+     * current-node-result> for each non-empty node
+     * @tparam T AVL tree
+     * @tparam F 'function' need to apply on the node, which should have two
+     * parameters and a member type named type to 'store' the result. Note that
+     * F should handle default value produced by empty_node properly.
+     * @tparam M class used to merge results from left tree, right tree and
+     * current tree into a single result(a member type named type)
+     * @tparam D default value for empty_node
+     * @note Using default parameters will always produce void as result unless
+     * some errors in F is made. So the result type of default version is
+     * meaningless. Therefore you can use some undefined member types to 'stop'
+     * for_each and show error messages.
+     */
+    template <typename T,
+              template <typename K, typename V>
+              typename F,
+              template <typename L, typename R, typename C> typename M =
+                  tavl_for_each_default_merge,
+              typename D = void>
+    struct tavl_for_each
+    {
+    private:
+        static constexpr bool is_left_empty = is_empty_node_v<typename T::left>;
+        static constexpr bool is_right_empty =
+            is_empty_node_v<typename T::right>;
+        using result = typename M<
+            typename tavl_for_each<typename T::left, F, M, D>::type,
+            typename tavl_for_each<typename T::right, F, M, D>::type,
+            typename F<typename T::key, typename T::value>::type>::type;
+
+    public:
+        using type = result;
+    };
+    template <template <typename K, typename V> typename F,
+              template <typename L, typename R, typename C>
+              typename M,
+              typename D>
+    struct tavl_for_each<empty_node, F, M, D>
+    {
+        using type = D;
+    };
+    template <typename T,
+              template <typename K, typename V>
+              typename F,
+              template <typename L, typename R, typename C> typename M =
+                  tavl_for_each_default_merge,
+              typename D = void>
+    using tavl_for_each_t = typename tavl_for_each<T, F, M, D>::type;
     namespace Impl
     {
         template <typename T>

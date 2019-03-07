@@ -418,6 +418,8 @@ namespace tavl
             2,
             int_v<5>,
             int_v<5>>;
+		using tavl_for_each_result = void;
+		using tavl_for_each_merge_result = int;
         inline namespace TestFind
         {
             static_assert(std::is_same_v<tavl_find_t<empty_node, int>, value<>>,
@@ -564,6 +566,27 @@ namespace tavl
                               test_remove_result_double_right>,
                           "tavl_remove for right-left");
         } // namespace TestRemove
+		inline namespace TestForEach
+		{
+			template <typename K, typename V>
+			struct test_for_each
+			{
+				using type = int;
+			};
+			template <typename L, typename R, typename C>
+			struct test_for_each_merge
+			{
+				using type = C;
+			};	
+			template <typename K, typename V>
+			struct test_for_each_fail
+			{
+				using type = std::conditional_t<(V::value > 5), int, typename test_for_each<K, V>::undefined>;
+			};
+			static_assert(std::is_same_v<tavl_for_each_result, tavl_for_each_t<test_avl_template, test_for_each>>, "test for default merging function");
+			static_assert(std::is_same_v<tavl_for_each_merge_result, tavl_for_each_t<test_avl_template, test_for_each, test_for_each_merge, int>>, "user defined merging function");
+			// static_assert(std::is_same_v<tavl_for_each_result, tavl_for_each_t<test_avl_template, test_for_each_fail>>, "test for failed check");
+		}
     }     // namespace InHeaderDebug
 } // namespace tavl
 int main()
