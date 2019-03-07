@@ -6,4 +6,4 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(TAVL)
 
 add_executable(test tests/test.cpp)
-
+target_include_directories(test PRIVATE .)
