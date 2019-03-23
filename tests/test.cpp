@@ -418,33 +418,40 @@ namespace tavl
             2,
             int_v<5>,
             int_v<5>>;
-		using tavl_for_each_result = void;
-		using tavl_for_each_merge_result = int;
+        using tavl_for_each_result       = void;
+        using tavl_for_each_merge_result = int;
         inline namespace TestFind
         {
-            static_assert(std::is_same_v<tavl_find_t<empty_node, int>, value<>>,
-                          "tavl_find for empty tree");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<5>>,
-                                         value<int_v<5>>>,
-                          "tavl_find for root");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<1>>,
-                                         value<int_v<1>>>,
-                          "tavl_find for the leftmost node");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<9>>,
-                                         value<int_v<9>>>,
-                          "tavl_find for the rightmost node");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<2>>,
-                                         value<int_v<2>>>,
-                          "tavl_find for non-leaf nodes");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<7>>,
-                                         value<int_v<7>>>,
-                          "tavl_find for normal leaves");
-            static_assert(std::is_same_v<tavl_find_t<test_find_input, int_v<3>>,
-                                         value<int_v<3>>>,
-                          "tavl_find for normal leaves");
+            static_assert(
+                std::is_same_v<tavl_find_t<empty_node, int>, empty_node>,
+                "tavl_find for empty tree");
+            static_assert(
+                std::is_same_v<tavl_find_t<test_find_input, int_v<5>>::key,
+                               value<int_v<5>>::type>,
+                "tavl_find for root");
+            static_assert(
+                std::is_same_v<tavl_find_t<test_find_input, int_v<1>>::key,
+                               value<int_v<1>>::type>,
+                "tavl_find for the leftmost node");
+            static_assert(
+                std::is_same_v<tavl_find_t<test_find_input, int_v<9>>::key,
+                               value<int_v<9>>::type>,
+                "tavl_find for the rightmost node");
+            static_assert(
+                std::is_same_v<tavl_find_t<test_find_input, int_v<2>>::key,
+                               value<int_v<2>>::type>,
+                "tavl_find for non-leaf nodes");
+            static_assert(
+                std::is_same_v<tavl_find_t<test_find_input, int_v<7>>::key,
+                               value<int_v<7>>::type>,
+                "tavl_find for normal leaves");
+            static_assert(
+                std::is_same_v<tavl_find_t<test_find_input, int_v<3>>::key,
+                               value<int_v<3>>::type>,
+                "tavl_find for normal leaves");
             static_assert(
                 std::is_same_v<tavl_find_t<test_find_input, int_v<10>>,
-                               value<>>,
+                               empty_node>,
                 "tavl_find for not existing keys");
         } // namespace TestFind
         inline namespace TestContain
@@ -566,27 +573,40 @@ namespace tavl
                               test_remove_result_double_right>,
                           "tavl_remove for right-left");
         } // namespace TestRemove
-		inline namespace TestForEach
-		{
-			template <typename K, typename V>
-			struct test_for_each
-			{
-				using type = int;
-			};
-			template <typename L, typename R, typename C>
-			struct test_for_each_merge
-			{
-				using type = C;
-			};	
-			template <typename K, typename V>
-			struct test_for_each_fail
-			{
-				using type = std::conditional_t<(V::value > 5), int, typename test_for_each<K, V>::undefined>;
-			};
-			static_assert(std::is_same_v<tavl_for_each_result, tavl_for_each_t<test_avl_template, test_for_each>>, "test for default merging function");
-			static_assert(std::is_same_v<tavl_for_each_merge_result, tavl_for_each_t<test_avl_template, test_for_each, test_for_each_merge, int>>, "user defined merging function");
-			// static_assert(std::is_same_v<tavl_for_each_result, tavl_for_each_t<test_avl_template, test_for_each_fail>>, "test for failed check");
-		}
+        inline namespace TestForEach
+        {
+            template <typename K, typename V>
+            struct test_for_each
+            {
+                using type = int;
+            };
+            template <typename L, typename R, typename C>
+            struct test_for_each_merge
+            {
+                using type = C;
+            };
+            template <typename K, typename V>
+            struct test_for_each_fail
+            {
+                using type =
+                    std::conditional_t<(V::value > 5),
+                                       int,
+                                       typename test_for_each<K, V>::undefined>;
+            };
+            static_assert(std::is_same_v<tavl_for_each_result,
+                                         tavl_for_each_t<test_avl_template,
+                                                         test_for_each>>,
+                          "test for default merging function");
+            static_assert(std::is_same_v<tavl_for_each_merge_result,
+                                         tavl_for_each_t<test_avl_template,
+                                                         test_for_each,
+                                                         test_for_each_merge,
+                                                         int>>,
+                          "user defined merging function");
+            // static_assert(std::is_same_v<tavl_for_each_result,
+            // tavl_for_each_t<test_avl_template, test_for_each_fail>>, "test
+            // for failed check");
+        } // namespace TestForEach
     }     // namespace InHeaderDebug
 } // namespace tavl
 int main()

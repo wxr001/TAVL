@@ -114,8 +114,8 @@ namespace tavl
         using value                 = V;
     };
     /**
-     * @brief find an element whose key is K. Result is wrapped with value
-     * struct if found, value<not_found> otherwise.
+     * @brief find an element whose key is K. Result is corresponding node
+     * struct, empty_node otherwise.
      * @tparam T AVL tree
      * @tparam K key type
      */
@@ -140,7 +140,7 @@ namespace tavl
     public:
         using type = typename std::conditional_t<
             comp_result == 0,
-            identity<value<typename T::value>>,
+            identity<T>,
             std::conditional_t<(comp_result > 0),
                                lazy_more<K, T>,
                                lazy_less<K, T>>>::type;
@@ -148,7 +148,7 @@ namespace tavl
     template <typename K>
     struct tavl_find<empty_node, K>
     {
-        using type = value<>;
+        using type = empty_node;
     };
     /**
      * @brief find an element whose key is K. Result is wrapped with value
@@ -161,7 +161,7 @@ namespace tavl
     // check whether there is an element whose key is K in the given AVL tree T
     template <typename T, typename K>
     static constexpr bool tavl_contain_v =
-        !std::is_same_v<tavl_find_t<T, K>, value<>>;
+        !std::is_same_v<tavl_find_t<T, K>, empty_node>;
     /**
      * @brief get the minimal element in the given AVL tree, or empty_node if
      * there is no such element.
@@ -211,10 +211,10 @@ namespace tavl
         };
 
     public:
-        using type =
-            typename std::conditional_t<std::is_same_v<typename T::right, empty_node>,
-                                        identity<T>,
-                                        lazy<T>>::type;
+        using type = typename std::conditional_t<
+            std::is_same_v<typename T::right, empty_node>,
+            identity<T>,
+            lazy<T>>::type;
     };
     template <>
     struct tavl_max<empty_node>
@@ -322,7 +322,7 @@ namespace tavl
      */
     template <typename T, typename K, typename V = std::true_type>
     using tavl_insert_t = typename tavl_insert<T, K, V>::type;
-    
+
     /**
      * @brief try to remopve the element whose key is K
      */
@@ -447,10 +447,10 @@ namespace tavl
      */
     template <typename T, typename K>
     using tavl_remove_t = typename tavl_remove<T, K>::type;
-	/**
-	 * @brief default implementation of merging function for tavl_for_each
-	 */
-	template <typename Left, typename Right, typename Current>
+    /**
+     * @brief default implementation of merging function for tavl_for_each
+     */
+    template <typename Left, typename Right, typename Current>
     struct tavl_for_each_default_merge
     {
         using type = std::void_t<Left, Right, Current>;
