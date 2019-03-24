@@ -59,6 +59,13 @@ namespace tavl
     {
         using type = T;
     };
+    // codes originally from
+    // https://musteresel.github.io/posts/2018/03/c++-lazy-template-instantiation.html
+    template <template <class...> class T, typename... Args>
+    struct lazy_template
+    {
+        using type = T<Args...>;
+    };
     namespace Impl
     {
         template <typename T>
@@ -141,9 +148,10 @@ namespace tavl
         using type = typename std::conditional_t<
             comp_result == 0,
             identity<T>,
-            std::conditional_t<(comp_result > 0),
-                               lazy_more<K, T>,
-                               lazy_less<K, T>>>::type;
+            typename std::conditional_t<(comp_result > 0),
+                                        lazy_template<lazy_more, K, T>,
+                                        lazy_template<lazy_less, K, T>>::type>::
+            type;
     };
     template <typename K>
     struct tavl_find<empty_node, K>
@@ -180,8 +188,8 @@ namespace tavl
     public:
         using type = typename std::conditional_t<
             std::is_same_v<typename T::left, empty_node>,
-            identity<T>,
-            lazy<T>>::type;
+            lazy_template<identity, T>,
+            lazy_template<lazy, T>>::type::type;
     };
     template <>
     struct tavl_min<empty_node>
@@ -213,8 +221,8 @@ namespace tavl
     public:
         using type = typename std::conditional_t<
             std::is_same_v<typename T::right, empty_node>,
-            identity<T>,
-            lazy<T>>::type;
+            lazy_template<identity, T>,
+            lazy_template<lazy, T>>::type::type;
     };
     template <>
     struct tavl_max<empty_node>
@@ -244,6 +252,7 @@ namespace tavl
                   typename TREE::key,
                   typename TREE::value>>
         {
+            static_assert(!std::is_same_v<TREE, empty_node>);
         };
         template <typename TREE, typename KL, typename VL>
         struct recursive_right
@@ -254,6 +263,7 @@ namespace tavl
                   typename TREE::key,
                   typename TREE::value>>
         {
+            static_assert(!std::is_same_v<TREE, empty_node>);
         };
         template <typename TREE>
         static constexpr int diff_height =
@@ -267,11 +277,13 @@ namespace tavl
                       (compare_v<KEY,
                                  typename recursive_left<TREE, KEY, VALUE>::
                                      type::left::key> < 0),
-                      Impl::rotate_left<
+                      lazy_template<
+                          Impl::rotate_left,
                           typename recursive_left<TREE, KEY, VALUE>::type>,
-                      Impl::double_left<
+                      lazy_template<
+                          Impl::double_left,
                           typename recursive_left<TREE, KEY, VALUE>::type>>,
-                  recursive_left<TREE, KEY, VALUE>>::type>
+                  lazy_template<recursive_left, TREE, KEY, VALUE>>::type::type>
         {
         };
         template <typename TREE, typename KEY, typename VALUE>
@@ -283,11 +295,13 @@ namespace tavl
                       (compare_v<KEY,
                                  typename recursive_right<TREE, KEY, VALUE>::
                                      type::right::key>> 0),
-                      Impl::rotate_right<
+                      lazy_template<
+                          Impl::rotate_right,
                           typename recursive_right<TREE, KEY, VALUE>::type>,
-                      Impl::double_right<
+                      lazy_template<
+                          Impl::double_right,
                           typename recursive_right<TREE, KEY, VALUE>::type>>,
-                  recursive_right<TREE, KEY, VALUE>>::type>
+                  lazy_template<recursive_right, TREE, KEY, VALUE>>::type::type>
         {
         };
         static constexpr int comp_result = compare_v<K, typename T::key>;
@@ -307,10 +321,12 @@ namespace tavl
     public:
         using type = typename std::conditional_t<
             comp_result == 0,
-            identity<Impl::invalid>,
-            std::conditional_t<(comp_result > 0),
-                               reset_height<lazy_insert_right<T, K, V>>,
-                               reset_height<lazy_insert_left<T, K, V>>>>::type;
+            lazy_template<identity, Impl::invalid>,
+            std::conditional_t<
+                (comp_result > 0),
+                lazy_template<reset_height, lazy_insert_right<T, K, V>>,
+                lazy_template<reset_height, lazy_insert_left<T, K, V>>>>::type::
+            type;
     };
     template <typename K, typename V>
     struct tavl_insert<empty_node, K, V>
@@ -361,11 +377,11 @@ namespace tavl
                   std::conditional_t<
                       recursion_left<TREE, KEY>::type::right::right::height >=
                           recursion_left<TREE, KEY>::type::right::left::height,
-                      Impl::rotate_right<
-                          typename recursion_left<TREE, KEY>::type>,
-                      Impl::double_right<
-                          typename recursion_left<TREE, KEY>::type>>,
-                  recursion_left<TREE, KEY>>::type>
+                      lazy_template<Impl::rotate_right,
+                                    typename recursion_left<TREE, KEY>::type>,
+                      lazy_template<Impl::double_right,
+                                    typename recursion_left<TREE, KEY>::type>>,
+                  lazy_template<recursion_left, TREE, KEY>>::type::typer>
         {
         };
         template <typename TREE, typename KEY>
@@ -375,16 +391,20 @@ namespace tavl
                   std::conditional_t<
                       (recursion_right<TREE, KEY>::type::left::left::height >=
                        recursion_right<TREE, KEY>::type::left::right::height),
-                      Impl::rotate_left<
-                          typename recursion_right<TREE, KEY>::type>,
-                      Impl::double_left<
-                          typename recursion_right<TREE, KEY>::type>>,
-                  recursion_right<TREE, KEY>>::type>
+                      lazy_template<Impl::rotate_left,
+                                    typename recursion_right<TREE, KEY>::type>,
+                      lazy_template<Impl::double_left,
+                                    typename recursion_right<TREE, KEY>::type>>,
+                  lazy_template<recursion_right, TREE, KEY>>::type::type>
         {
         };
+        template <typename TREE>
+        using lazy_current_rrecursive_right =
+            recursion_right<TREE,
+                            typename tavl_min_t<typename TREE::right>::key>;
         template <typename TREE, typename KEY>
         struct lazy_current
-            : public identity<typename std::conditional_t<
+            : public std::conditional_t<
                   std::is_same_v<typename TREE::left, empty_node> ||
                       std::is_same_v<typename TREE::right, empty_node>,
                   std::conditional_t<
@@ -393,24 +413,16 @@ namespace tavl
                       identity<typename TREE::left>>,
                   identity<tavl_node<
                       typename TREE::left,
-                      typename recursion_right<
-                          TREE,
-                          typename tavl_min_t<typename TREE::right>::key>::
-                          type::right,
-                      ((TREE::left::height >
-                        recursion_right<
-                            TREE,
-                            typename tavl_min_t<typename TREE::right>::key>::
-                            type::right::height) ?
+                      typename lazy_current_rrecursive_right<TREE>::type::right,
+                      ((TREE::left::height > lazy_current_rrecursive_right<
+                                                 TREE>::type::right::height) ?
 
                            TREE::left::height + 1 :
-                           recursion_right<
-                               TREE,
-                               typename tavl_min_t<typename TREE::right>::key>::
-                                   type::right::height +
+                           lazy_current_rrecursive_right<
+                               TREE>::type::right::height +
                                1),
                       typename tavl_min_t<typename TREE::right>::key,
-                      typename tavl_min_t<typename TREE::right>::value>>>::type>
+                      typename tavl_min_t<typename TREE::right>::value>>>
         {
         };
         template <typename TREE>
@@ -432,10 +444,11 @@ namespace tavl
     public:
         using type = typename std::conditional_t<
             (comp_result > 0),
-            reset_height<lazy_right<T, K>>,
-            std::conditional_t<(comp_result < 0),
-                               reset_height<lazy_left<T, K>>,
-                               reset_height<lazy_current<T, K>>>>::type;
+            lazy_template<reset_height, lazy_right<T, K>>,
+            std::conditional_t<
+                (comp_result < 0),
+                lazy_template<reset_height, lazy_left<T, K>>,
+                lazy_template<reset_height, lazy_current<T, K>>>>::type::type;
     };
     template <typename K>
     struct tavl_remove<empty_node, K>
@@ -530,6 +543,7 @@ namespace tavl
                   typename T::left::key,
                   typename T::left::value>>
         {
+            static_assert(!std::is_same_v<T, empty_node>);
         };
         template <typename T>
         struct rotate_right
@@ -554,6 +568,7 @@ namespace tavl
                   typename T::right::key,
                   typename T::right::value>>
         {
+            static_assert(!std::is_same_v<T, empty_node>);
         };
         template <typename T>
         struct double_left
@@ -564,6 +579,7 @@ namespace tavl
                             typename T::key,
                             typename T::value>>::type>
         {
+            static_assert(!std::is_same_v<T, empty_node>);
         };
         template <typename T>
         struct double_right
@@ -574,6 +590,7 @@ namespace tavl
                             typename T::key,
                             typename T::value>>::type>
         {
+            static_assert(!std::is_same_v<T, empty_node>);
         };
     } // namespace Impl
 } // namespace tavl
