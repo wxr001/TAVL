@@ -381,7 +381,7 @@ namespace tavl
                                     typename recursion_left<TREE, KEY>::type>,
                       lazy_template<Impl::double_right,
                                     typename recursion_left<TREE, KEY>::type>>,
-                  lazy_template<recursion_left, TREE, KEY>>::type::typer>
+                  lazy_template<recursion_left, TREE, KEY>>::type::type>
         {
         };
         template <typename TREE, typename KEY>
