@@ -607,7 +607,8 @@ namespace tavl
             // tavl_for_each_t<test_avl_template, test_for_each_fail>>, "test
             // for failed check");
         } // namespace TestForEach
-    }     // namespace InHeaderDebug
+
+    } // namespace InHeaderDebug
 } // namespace tavl
 int main()
 {

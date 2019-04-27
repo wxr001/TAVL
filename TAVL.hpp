@@ -159,8 +159,8 @@ namespace tavl
         using type = empty_node;
     };
     /**
-     * @brief find an element whose key is K. Result is wrapped with value
-     * struct if found, value<not_found> otherwise.
+     * @brief find an element whose key is K. Return the sub-tree with K as its
+     * root, empty_node otherwise
      * @tparam T AVL tree
      * @tparam K key type
      */
@@ -168,7 +168,7 @@ namespace tavl
     using tavl_find_t = typename tavl_find<T, K>::type;
     // check whether there is an element whose key is K in the given AVL tree T
     template <typename T, typename K>
-    static constexpr bool tavl_contain_v =
+    inline constexpr bool tavl_contain_v =
         !std::is_same_v<tavl_find_t<T, K>, empty_node>;
     /**
      * @brief get the minimal element in the given AVL tree, or empty_node if
@@ -245,25 +245,25 @@ namespace tavl
     private:
         template <typename TREE, typename KL, typename VL>
         struct recursive_left
-            : public identity<tavl_node<
-                  typename tavl_insert<typename TREE::left, KL, VL>::type,
-                  typename TREE::right,
-                  TREE::height,
-                  typename TREE::key,
-                  typename TREE::value>>
         {
             static_assert(!std::is_same_v<TREE, empty_node>);
+            using type = tavl_node<
+                typename tavl_insert<typename TREE::left, KL, VL>::type,
+                typename TREE::right,
+                TREE::height,
+                typename TREE::key,
+                typename TREE::value>;
         };
         template <typename TREE, typename KL, typename VL>
         struct recursive_right
-            : public identity<tavl_node<
-                  typename TREE::left,
-                  typename tavl_insert<typename TREE::right, KL, VL>::type,
-                  TREE::height,
-                  typename TREE::key,
-                  typename TREE::value>>
         {
             static_assert(!std::is_same_v<TREE, empty_node>);
+            using type = tavl_node<
+                typename TREE::left,
+                typename tavl_insert<typename TREE::right, KL, VL>::type,
+                TREE::height,
+                typename TREE::key,
+                typename TREE::value>;
         };
         template <typename TREE>
         static constexpr int diff_height =
@@ -322,11 +322,11 @@ namespace tavl
         using type = typename std::conditional_t<
             comp_result == 0,
             lazy_template<identity, Impl::invalid>,
-            std::conditional_t<
-                (comp_result > 0),
-                lazy_template<reset_height, lazy_insert_right<T, K, V>>,
-                lazy_template<reset_height, lazy_insert_left<T, K, V>>>>::type::
-            type;
+            lazy_template<reset_height,
+                          std::conditional_t<(comp_result > 0),
+                                             lazy_insert_right<T, K, V>,
+                                             lazy_insert_left<T, K, V>>>>::
+            type::type;
     };
     template <typename K, typename V>
     struct tavl_insert<empty_node, K, V>
