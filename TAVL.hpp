@@ -476,7 +476,7 @@ namespace tavl
      * parameters and a member type named type to 'store' the result. Note that
      * F should handle default value produced by empty_node properly.
      * @tparam M class used to merge results from left tree, right tree and
-     * current tree into a single result(a member type named type)
+     * current result into a single result(a member type named type)
      * @tparam D default value for empty_node
      * @note Using default parameters will always produce void as result unless
      * some errors in F is made. So the result type of default version is
@@ -518,6 +518,76 @@ namespace tavl
                   tavl_for_each_default_merge,
               typename D = void>
     using tavl_for_each_t = typename tavl_for_each<T, F, M, D>::type;
+    /**
+     * @brief default implementation of merging function for
+     * tavl_for_each_middle_order
+     */
+    template <typename Before, typename Current>
+    struct tavl_for_each_middle_order_default_merge
+    {
+        using type = std::void_t<Before, Current>;
+    };
+    /**
+     * @brief apply F<key, value> and M<previous, current-node-result> for each
+     * non-empty node in the middle order (that is ,left-tree -> current-node ->
+     * right-tree)
+     * @tparam T AVL tree
+     * @tparam F 'function' need to apply on the node, which should have two
+     * parameters and a member type named type to 'store' the result. Note that
+     * F should handle default value produced by empty_node properly.
+     * @tparam M class used to merge results from previous results (after
+     * merging) and current result into a single result(a member type named
+     * type)
+     * @tparam Last initial value
+     * @note Using default parameters will always produce void as result unless
+     * some errors in F is made. So the result type of default version is
+     * meaningless. Therefore you can use some undefined member types to 'stop'
+     * for_each and show error messages.
+     */
+    template <typename T,
+              template <typename K, typename V>
+              typename F,
+              template <typename B, typename C>
+              typename M,
+              typename Last>
+    struct tavl_for_each_middle_order
+    {
+    private:
+        static constexpr bool is_left_empty = is_empty_node_v<typename T::left>;
+        static constexpr bool is_right_empty =
+            is_empty_node_v<typename T::right>;
+        template <typename Tree, typename LastR = Last>
+        using recursive = std::conditional_t<
+            std::is_same_v<Tree, empty_node>,
+            LastR,
+            typename tavl_for_each_middle_order<Tree, F, M, Last>::type>;
+        using left_result = recursive<typename T::left>;
+        using current_result =
+            typename F<typename T::key, typename T::value>::type;
+        using merge_left_current =
+            typename M<left_result, current_result>::type;
+        using right_result = recursive<typename T::right, merge_left_current>;
+
+    public:
+        using type = right_result;
+    };
+    template <template <typename K, typename V> typename F,
+              template <typename B, typename C>
+              typename M,
+              typename Last>
+    struct tavl_for_each_middle_order<empty_node, F, M, Last>
+    {
+        using type = Last;
+    };
+    template <typename T,
+              template <typename K, typename V>
+              typename F,
+              template <typename B, typename C>
+              typename M,
+              typename Init>
+    using tavl_for_each_middle_order_t =
+        typename tavl_for_each_middle_order<T, F, M, Init>::type;
+
     namespace Impl
     {
         template <typename T>
