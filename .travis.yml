@@ -60,7 +60,7 @@ matrix:
     - BUILD_TYPE=Release
     before_install:
     - export http_proxy='';
-    - brew update
+    - travis_wait brew update
     - brew install tree
     - brew install cmake || brew upgrade cmake
     - brew install ninja
