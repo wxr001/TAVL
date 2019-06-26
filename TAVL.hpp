@@ -59,6 +59,12 @@ namespace tavl
     {
         using type = T;
     };
+    template <typename T1, typename T2>
+    struct type_pair
+    {
+        using first_type  = T1;
+        using second_type = T2;
+    };
     // codes originally from
     // https://musteresel.github.io/posts/2018/03/c++-lazy-template-instantiation.html
     template <template <class...> class T, typename... Args>
@@ -511,6 +517,21 @@ namespace tavl
     {
         using type = D;
     };
+    /**
+     * @brief apply F<key, value> and M<left-tree-result, right-tree-result,
+     * current-node-result> for each non-empty node
+     * @tparam T AVL tree
+     * @tparam F 'function' need to apply on the node, which should have two
+     * parameters and a member type named type to 'store' the result. Note that
+     * F should handle default value produced by empty_node properly.
+     * @tparam M class used to merge results from left tree, right tree and
+     * current result into a single result(a member type named type)
+     * @tparam D default value for empty_node
+     * @note Using default parameters will always produce void as result unless
+     * some errors in F is made. So the result type of default version is
+     * meaningless. Therefore you can use some undefined member types to 'stop'
+     * for_each and show error messages.
+     */
     template <typename T,
               template <typename K, typename V>
               typename F,
@@ -579,6 +600,23 @@ namespace tavl
     {
         using type = Last;
     };
+    /**
+     * @brief apply F<key, value> and M<previous, current-node-result> for each
+     * non-empty node in the middle order (that is ,left-tree -> current-node ->
+     * right-tree)
+     * @tparam T AVL tree
+     * @tparam F 'function' need to apply on the node, which should have two
+     * parameters and a member type named type to 'store' the result. Note that
+     * F should handle default value produced by empty_node properly.
+     * @tparam M class used to merge results from previous results (after
+     * merging) and current result into a single result(a member type named
+     * type)
+     * @tparam Last initial value
+     * @note Using default parameters will always produce void as result unless
+     * some errors in F is made. So the result type of default version is
+     * meaningless. Therefore you can use some undefined member types to 'stop'
+     * for_each and show error messages.
+     */
     template <typename T,
               template <typename K, typename V>
               typename F,
@@ -587,7 +625,46 @@ namespace tavl
               typename Init>
     using tavl_for_each_middle_order_t =
         typename tavl_for_each_middle_order<T, F, M, Init>::type;
+    /**
+     * @brief create intersections between multiple trees
+     * @tparam T1 the first tree to examine
+     * @tparam Trees other trees
+     * @note Trees can be empty
+     */
+    template <typename T1, typename... Trees>
+    struct tavl_intersect
+    {
+    private:
+        template <typename Key, typename Value>
+        struct for_each_node
+        {
+            using type = std::conditional_t<(tavl_contain_v<Trees, Key> && ...),
+                                            type_pair<Key, Value>,
+                                            int>;
+        };
+        template <typename Previous, typename Current>
+        struct merger
+        {
+            using type = typename std::conditional_t<
+                std::is_same_v<Current, int>,
+                identity<Previous>,
+                lazy_template<tavl_insert_t,
+                              Previous,
+                              typename Current::first_type,
+                              typename Current::second_type>>::type;
+        };
 
+    public:
+        using type =
+            tavl_for_each_middle_order_t<T1, for_each_node, merger, empty_node>;
+    };
+    template <typename... Trees>
+    struct tavl_intersect<empty_node, Trees...>
+    {
+        using type = empty_node;
+    };
+    template <typename Tree, typename... Trees>
+    using tavl_intersect_t = typename tavl_intersect<Tree, Trees...>::type;
     namespace Impl
     {
         template <typename T>
