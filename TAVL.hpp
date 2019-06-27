@@ -581,7 +581,7 @@ namespace tavl
         using recursive = std::conditional_t<
             std::is_same_v<Tree, empty_node>,
             LastR,
-            typename tavl_for_each_middle_order<Tree, F, M, Last>::type>;
+            typename tavl_for_each_middle_order<Tree, F, M, LastR>::type>;
         using left_result = recursive<typename T::left>;
         using current_result =
             typename F<typename T::key, typename T::value>::type;
