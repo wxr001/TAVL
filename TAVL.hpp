@@ -645,13 +645,14 @@ namespace tavl
         template <typename Previous, typename Current>
         struct merger
         {
-            using type = typename std::conditional_t<
-                std::is_same_v<Current, int>,
-                identity<Previous>,
-                lazy_template<tavl_insert_t,
-                              Previous,
-                              typename Current::first_type,
-                              typename Current::second_type>>::type;
+            using type = tavl_insert_t<Previous,
+                                       typename Current::first_type,
+                                       typename Current::second_type>;
+        };
+        template <typename Previous>
+        struct merger<Previous, int>
+        {
+            using type = Previous;
         };
 
     public:
