@@ -549,6 +549,25 @@ namespace tavl
         using type = std::void_t<Before, Current>;
     };
     /**
+     * @brief key-value pair that can be used by
+     * tavl_for_each_middle_order_tree_merger
+     */
+    template <typename K, typename V>
+    using kv_pair = tavl_node<empty_node, empty_node, 0, K, V>;
+    /**
+     * @brief Another implementation of merging function for
+     * tavl_for_each_middle_order used for creating a new Tree from the old one
+     * @note Result type of the 'function' used in tavl_for_each_middle_order
+     * should have sub-type 'key' && 'value' ( or using kv_pair<Key, Value> )
+     */
+    template <typename Previous, typename Current>
+    struct tavl_for_each_middle_order_tree_merger
+    {
+        using type = tavl_insert_t<Previous,
+                                   typename Current::key,
+                                   typename Current::value>;
+    };
+    /**
      * @brief apply F<key, value> and M<previous, current-node-result> for each
      * non-empty node in the middle order (that is ,left-tree -> current-node ->
      * right-tree)
