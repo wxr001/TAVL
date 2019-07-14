@@ -685,6 +685,36 @@ namespace tavl
     };
     template <typename Tree, typename... Trees>
     using tavl_intersect_t = typename tavl_intersect<Tree, Trees...>::type;
+    template <typename Tree, typename Tree2, typename... Others>
+    struct tavl_union
+    {
+    private:
+        template <typename Key, typename Value>
+        struct for_each_item_in_Tree
+        {
+            using type = type_pair<Key, Value>;
+        };
+        template <typename TreeBefore, typename Pair>
+        struct for_each_merger
+        {
+            using type = tavl_insert_t<TreeBefore,
+                                       typename Pair::first_type,
+                                       typename Pair::second_type>;
+        };
+        using union_result =
+            tavl::tavl_for_each_middle_order_t<Tree2,
+                                               for_each_item_in_Tree,
+                                               for_each_merger,
+                                               Tree>;
+
+    public:
+        using type = typename std::conditional_t<
+            sizeof...(Others) != 0,
+            lazy_template<tavl_union, union_result, Others...>,
+            identity<identity<union_result>>>::type::type;
+    };
+    template <typename Tree, typename... Trees>
+    using tavl_union_t = typename tavl_union<Tree, Trees...>::type;
     namespace Impl
     {
         template <typename T>
