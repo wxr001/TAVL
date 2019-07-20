@@ -715,6 +715,14 @@ namespace tavl
     };
     template <typename Tree, typename... Trees>
     using tavl_union_t = typename tavl_union<Tree, Trees...>::type;
+    /*
+     * @brief A derived version of tavl_union_t for using as a merger in
+     * tavl_for_each(t)
+     * @note see tavl::tavl_union for more information
+     *
+     */
+    template <typename T1, typename T2, typename T3>
+    using tavl_union_3 = tavl::tavl_union_t<T1, T2, T3>;
     namespace Impl
     {
         template <typename T>
