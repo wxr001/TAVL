@@ -697,9 +697,13 @@ namespace tavl
         template <typename TreeBefore, typename Pair>
         struct for_each_merger
         {
-            using type = tavl_insert_t<TreeBefore,
-                                       typename Pair::first_type,
-                                       typename Pair::second_type>;
+            using type = typename std::conditional_t<
+                tavl_contain_v<TreeBefore, typename Pair::first_type>,
+                identity<TreeBefore>,
+                lazy_template<tavl_insert_t,
+                              TreeBefore,
+                              typename Pair::first_type,
+                              typename Pair::second_type>>::type;
         };
         using union_result =
             tavl::tavl_for_each_middle_order_t<Tree2,
