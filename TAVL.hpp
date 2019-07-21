@@ -722,7 +722,7 @@ namespace tavl
      *
      */
     template <typename T1, typename T2, typename T3>
-    using tavl_union_3 = tavl::tavl_union_t<T1, T2, T3>;
+    using tavl_union_3 = tavl::tavl_union<T1, T2, T3>;
     namespace Impl
     {
         template <typename T>
