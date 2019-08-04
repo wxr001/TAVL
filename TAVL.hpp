@@ -727,21 +727,35 @@ namespace tavl
      */
     template <typename T1, typename T2, typename T3>
     using tavl_union_3 = tavl::tavl_union<T1, T2, T3>;
+
     template <typename Lhs, typename Rhs>
-    struct tavl_is_same
+    struct tavl_is_same : std::is_same<Lhs, Rhs>
+    {
+    };
+    template <typename L1,
+              typename R1,
+              int H1,
+              typename K1,
+              typename V1,
+              typename L2,
+              typename R2,
+              int H2,
+              typename K2,
+              typename V2>
+    struct tavl_is_same<tavl_node<L1, R1, H1, K1, V1>,
+                        tavl_node<L2, R2, H2, K2, V2>>
     {
     private:
-        template <typename>
-        struct not_same
-        {
-        };
+        using lhs = tavl_node<L1, R1, H1, K1, V1>;
+        using rhs = tavl_node<L2, R2, H2, K2, V2>;
         template <typename K, typename V>
         struct comp_impl
         {
             template <typename Key, typename Value>
             static constexpr bool safe_find =
-                std::is_same_v<Value, typename tavl_find_t<Rhs, Key>::value>;
-            using type = std::conditional_t<tavl_contain_v<Rhs, K>,
+                tavl_is_same<Value,
+                             typename tavl_find_t<rhs, Key>::value>::value;
+            using type = std::conditional_t<tavl_contain_v<rhs, K>,
                                             std::conditional_t<safe_find<K, V>,
                                                                std::true_type,
                                                                std::false_type>,
@@ -756,7 +770,7 @@ namespace tavl
 
     public:
         static constexpr bool value =
-            tavl_for_each_t<Lhs, comp_impl, comp_merge, std::true_type>::value;
+            tavl_for_each_t<lhs, comp_impl, comp_merge, std::true_type>::value;
     };
     template <typename L, typename R>
     inline constexpr bool tavl_is_same_v = tavl_is_same<L, R>::value;

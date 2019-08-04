@@ -32,7 +32,136 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include "TAVL.hpp"
+#include <utility>
+namespace Compiler
+{
+    template <typename CharT, CharT... chars>
+    using t_basic_string = std::integer_sequence<CharT, chars...>;
+    template <char... chars>
+    using t_string = t_basic_string<char, chars...>;
+    template <char... chars>
+    struct ignore_one;
+    template <char C, char... chars>
+    struct ignore_one<C, chars...>
+    {
+        using type = t_string<chars...>;
+    };
+    template <char C>
+    struct ignore_one<C>
+    {
+        using type = t_string<>;
+    };
+    template <>
+    struct ignore_one<>
+    {
+        using type = t_string<>;
+    };
+    template <char... chars>
+    using ignore_one_t = typename ignore_one<chars...>::type;
+    template <typename T>
+    struct first_character_s;
+    template <char C, char... chars>
+    struct first_character_s<t_string<C, chars...>>
+    {
+        static constexpr char value = C;
+        using type                  = t_string<C>;
+    };
+    template <>
+    struct first_character_s<t_string<>>
+    {
+        static constexpr char value = 0;
+        using type                  = t_string<>;
+    };
+    template <char... chars>
+    using first_character_t =
+        typename first_character_s<t_string<chars...>>::type;
+    template <char... chars>
+    static constexpr char first_character_v =
+        first_character_s<t_string<chars...>>::value;
+} // namespace Compiler
+namespace tavl
+{
+    template <char... lhs, char... rhs>
+    struct compare<Compiler::t_string<lhs...>, Compiler::t_string<rhs...>>
+    {
+        using type = std::conditional_t<
+            Compiler::first_character_v<lhs...> >=
+                Compiler::first_character_v<rhs...>,
+            std::conditional_t<
+                (Compiler::first_character_v<lhs...>>
+                 Compiler::first_character_v<rhs...>),
+                std::integral_constant<int, 1>,
+                typename compare<Compiler::ignore_one_t<lhs...>,
+                                 Compiler::ignore_one_t<rhs...>>::type>,
+            std::integral_constant<int, -1>>;
+        static constexpr int value = type::value;
+    };
+    template <char... rhs>
+    struct compare<Compiler::t_string<>, Compiler::t_string<rhs...>>
+    {
+        using type                 = std::integral_constant<int, -1>;
+        static constexpr int value = type::value;
+    };
+    template <char... lhs>
+    struct compare<Compiler::t_string<lhs...>, Compiler::t_string<>>
+    {
+        using type                 = std::integral_constant<int, 1>;
+        static constexpr int value = type::value;
+    };
+    template <>
+    struct compare<Compiler::t_string<>, Compiler::t_string<>>
+    {
+        using type                 = std::integral_constant<int, 0>;
+        static constexpr int value = type::value;
+    };
+} // namespace tavl
+namespace Compiler
+{
+    template <typename...>
+    struct type_list;
+    template <auto V>
+    struct value_wrapper
+    {
+        static constexpr auto value = V;
+    };
+} // namespace Compiler
+namespace tavl
+{
+    template <typename Arg1,
+              typename... Args1,
+              typename Arg2,
+              typename... Args2>
+    struct compare<Compiler::type_list<Arg1, Args1...>,
+                   Compiler::type_list<Arg2, Args2...>>
+    {
+    private:
+        static constexpr int comp_cur = compare_v<Arg1, Arg2>;
+        using value_type              = typename std::conditional_t<
+            !std::is_same_v<Arg1, Arg2>,
+            identity<Compiler::value_wrapper<comp_cur>>,
+            lazy_template<compare,
+                          Compiler::type_list<Args1...>,
+                          Compiler::type_list<Args2...>>>::type;
 
+    public:
+        static constexpr int value = value_type::value;
+    };
+    template <typename... Args2>
+    struct compare<Compiler::type_list<>, Compiler::type_list<Args2...>>
+    {
+        static constexpr int value = -1;
+    };
+    template <typename... Args1>
+    struct compare<Compiler::type_list<Args1...>, Compiler::type_list<>>
+    {
+        static constexpr int value = 1;
+    };
+    template <>
+    struct compare<Compiler::type_list<>, Compiler::type_list<>>
+    {
+        static constexpr int value = 0;
+    };
+} // namespace tavl
 namespace tavl
 {
     // for tests only
