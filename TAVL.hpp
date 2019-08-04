@@ -740,7 +740,7 @@ namespace tavl
         {
             template <typename Key, typename Value>
             static constexpr bool safe_find =
-                std::is_same_v<Value, tavl_find_t<Rhs, Key>::value>;
+                std::is_same_v<Value, typename tavl_find_t<Rhs, Key>::value>;
             using type = std::conditional_t<
                 tavl_contain_v<Rhs, K>,
                 std::conditional_t<safe_find<K, V>,
