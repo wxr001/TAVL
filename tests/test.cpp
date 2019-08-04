@@ -422,7 +422,7 @@ namespace tavl
         using tavl_for_each_merge_result = int;
         // Warning: the following trees may have incorrect structure.
         using test_is_same_normal =
-            tavl::tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>;
+            tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>;
         using test_is_same_diff_order_a = tavl_node<
             tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
                       tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
@@ -438,22 +438,22 @@ namespace tavl
             int_v<5>,
             int_v<5>>;
         using test_is_same_diff_order_b = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
                       1,
                       int_v<2>,
                       int_v<2>>,
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
-                      empty_node,
+            tavl_node<empty_node,
+                      tavl_node<empty_node, empty_node, 0, int_v<9>, int_v<9>>,
                       1,
-                      int_v<9>,
-                      int_v<9>>,
+                      int_v<7>,
+                      int_v<7>>,
             2,
             int_v<5>,
             int_v<5>>;
         using test_is_same_diff_order_c = tavl_node<
-            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
-                      tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<1>>,
                       1,
                       int_v<2>,
                       int_v<2>>,
@@ -463,8 +463,8 @@ namespace tavl
                       int_v<9>,
                       int_v<9>>,
             2,
-            int_v<5>,
-            int_v<5>>;
+            int_v<3>,
+            int_v<3>>;
         inline namespace TestFind
         {
             static_assert(
@@ -664,7 +664,7 @@ namespace tavl
             static_assert(
                 !tavl_is_same_v<test_is_same_diff_order_a,
                                 test_is_same_diff_order_c>,
-                "test for trees with same keys but in different orders and different values");
+                "test for trees with same keys but in different orders and different");
         } // namespace TestIsSame
     }     // namespace InHeaderDebug
 } // namespace tavl

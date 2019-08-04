@@ -741,22 +741,22 @@ namespace tavl
             template <typename Key, typename Value>
             static constexpr bool safe_find =
                 std::is_same_v<Value, typename tavl_find_t<Rhs, Key>::value>;
-            using type = std::conditional_t<
-                tavl_contain_v<Rhs, K>,
-                std::conditional_t<safe_find<K, V>,
-                                   empty_node,
-                                   typename not_same<K>::type>,
-                typename not_same<K>::type>;
+            using type = std::conditional_t<tavl_contain_v<Rhs, K>,
+                                            std::conditional_t<safe_find<K, V>,
+                                                               std::true_type,
+                                                               std::false_type>,
+                                            std::false_type>;
         };
-        template <typename L,
-                  typename = tavl_for_each_middle_order_t<L, comp_impl>>
-        static std::true_type do_comp(L&&);
-        template <typename L>
-        static std::false_type do_comp(...);
+        template <typename L, typename R, typename C>
+        struct comp_merge
+        {
+            using type =
+                std::integral_constant<bool, L::value && R::value && C::value>;
+        };
 
     public:
         static constexpr bool value =
-            decltype(do_comp(std::declval<Lhs>()))::value;
+            tavl_for_each_t<Lhs, comp_impl, comp_merge, std::true_type>::value;
     };
     template <typename L, typename R>
     inline constexpr bool tavl_is_same_v = tavl_is_same<L, R>::value;
