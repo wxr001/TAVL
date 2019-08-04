@@ -639,9 +639,9 @@ namespace tavl
     template <typename T,
               template <typename K, typename V>
               typename F,
-              template <typename B, typename C>
-              typename M,
-              typename Init>
+              template <typename B, typename C> typename M =
+                  tavl_for_each_middle_order_default_merge,
+              typename Init = void>
     using tavl_for_each_middle_order_t =
         typename tavl_for_each_middle_order<T, F, M, Init>::type;
     /**
@@ -727,6 +727,39 @@ namespace tavl
      */
     template <typename T1, typename T2, typename T3>
     using tavl_union_3 = tavl::tavl_union<T1, T2, T3>;
+    template <typename Lhs, typename Rhs>
+    struct tavl_is_same
+    {
+    private:
+        template <typename>
+        struct not_same
+        {
+        };
+        template <typename K, typename V>
+        struct comp_impl
+        {
+            template <typename Key, typename Value>
+            static constexpr bool safe_find =
+                std::is_same_v<Value, tavl_find_t<Rhs, Key>::value>;
+            using type = std::conditional_t<
+                tavl_contain_v<Rhs, K>,
+                std::conditional_t<safe_find<K, V>,
+                                   empty_node,
+                                   typename not_same<K>::type>,
+                typename not_same<K>::type>;
+        };
+        template <typename L,
+                  typename = tavl_for_each_middle_order_t<L, comp_impl>>
+        static std::true_type do_comp(L&&);
+        template <typename L>
+        static std::false_type do_comp(...);
+
+    public:
+        static constexpr bool value =
+            decltype(do_comp(std::declval<Lhs>()))::value;
+    };
+    template <typename L, typename R>
+    inline constexpr bool tavl_is_same_v = tavl_is_same<L, R>::value;
     namespace Impl
     {
         template <typename T>
@@ -803,4 +836,26 @@ namespace tavl
         };
     } // namespace Impl
 } // namespace tavl
+#ifndef NO_PATCH_FOR_STD_IS_SAME_V
+namespace std
+{
+    template <typename L1,
+              typename R1,
+              int H1,
+              typename K1,
+              typename V1,
+              typename L2,
+              typename R2,
+              int H2,
+              typename K2,
+              typename V2>
+    struct is_same<tavl::tavl_node<L1, R1, H1, K1, V1>,
+                   tavl::tavl_node<L2, R2, H2, K2, V2>>
+    {
+        static constexpr bool value =
+            tavl::tavl_is_same_v<tavl::tavl_node<L1, R1, H1, K1, V1>,
+                                 tavl::tavl_node<L2, R2, H2, K2, V2>>;
+    };
+} // namespace std
+#endif
 #endif

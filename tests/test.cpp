@@ -420,6 +420,51 @@ namespace tavl
             int_v<5>>;
         using tavl_for_each_result       = void;
         using tavl_for_each_merge_result = int;
+        // Warning: the following trees may have incorrect structure.
+        using test_is_same_normal =
+            tavl::tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>;
+        using test_is_same_diff_order_a = tavl_node<
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
+                      1,
+                      int_v<2>,
+                      int_v<2>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
+                      empty_node,
+                      1,
+                      int_v<9>,
+                      int_v<9>>,
+            2,
+            int_v<5>,
+            int_v<5>>;
+        using test_is_same_diff_order_b = tavl_node<
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
+                      tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+                      1,
+                      int_v<2>,
+                      int_v<2>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
+                      empty_node,
+                      1,
+                      int_v<9>,
+                      int_v<9>>,
+            2,
+            int_v<5>,
+            int_v<5>>;
+        using test_is_same_diff_order_c = tavl_node<
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
+                      tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+                      1,
+                      int_v<2>,
+                      int_v<2>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<8>>,
+                      empty_node,
+                      1,
+                      int_v<9>,
+                      int_v<9>>,
+            2,
+            int_v<5>,
+            int_v<5>>;
         inline namespace TestFind
         {
             static_assert(
@@ -607,8 +652,21 @@ namespace tavl
             // tavl_for_each_t<test_avl_template, test_for_each_fail>>, "test
             // for failed check");
         } // namespace TestForEach
-
-    } // namespace InHeaderDebug
+        inline namespace TestIsSame
+        {
+            static_assert(
+                tavl_is_same_v<test_is_same_normal, test_is_same_normal>,
+                "test for SAME trees");
+            static_assert(
+                tavl_is_same_v<test_is_same_diff_order_a,
+                               test_is_same_diff_order_b>,
+                "test for trees with same keys and values but in different orders");
+            static_assert(
+                !tavl_is_same_v<test_is_same_diff_order_a,
+                                test_is_same_diff_order_c>,
+                "test for trees with same keys but in different orders and different values");
+        } // namespace TestIsSame
+    }     // namespace InHeaderDebug
 } // namespace tavl
 int main()
 {
