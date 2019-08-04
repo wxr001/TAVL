@@ -836,26 +836,4 @@ namespace tavl
         };
     } // namespace Impl
 } // namespace tavl
-#ifndef NO_PATCH_FOR_STD_IS_SAME_V
-namespace std
-{
-    template <typename L1,
-              typename R1,
-              int H1,
-              typename K1,
-              typename V1,
-              typename L2,
-              typename R2,
-              int H2,
-              typename K2,
-              typename V2>
-    struct is_same<tavl::tavl_node<L1, R1, H1, K1, V1>,
-                   tavl::tavl_node<L2, R2, H2, K2, V2>>
-    {
-        static constexpr bool value =
-            tavl::tavl_is_same_v<tavl::tavl_node<L1, R1, H1, K1, V1>,
-                                 tavl::tavl_node<L2, R2, H2, K2, V2>>;
-    };
-} // namespace std
-#endif
 #endif
