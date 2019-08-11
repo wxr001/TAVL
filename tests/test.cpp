@@ -594,6 +594,12 @@ namespace tavl
             2,
             int_v<3>,
             int_v<3>>;
+        using test_is_same_more =
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
+                      1,
+                      int_v<2>,
+                      int_v<2>>;
         inline namespace TestFind
         {
             static_assert(
@@ -794,6 +800,11 @@ namespace tavl
                 !tavl_is_same_v<test_is_same_diff_order_a,
                                 test_is_same_diff_order_c>,
                 "test for trees with same keys but in different orders and different");
+            static_assert(
+                !tavl_is_same_v<test_is_same_normal, test_is_same_more> &&
+                    !tavl_is_same_v<test_is_same_more, test_is_same_normal>,
+                "test for trees one is the other's subset");
+
         } // namespace TestIsSame
     }     // namespace InHeaderDebug
 } // namespace tavl

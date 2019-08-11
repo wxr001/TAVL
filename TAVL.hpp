@@ -748,29 +748,38 @@ namespace tavl
     private:
         using lhs = tavl_node<L1, R1, H1, K1, V1>;
         using rhs = tavl_node<L2, R2, H2, K2, V2>;
-        template <typename K, typename V>
-        struct comp_impl
+        template <typename Left, typename Right>
+        struct comp_oneway
         {
-            template <typename Key, typename Value>
-            static constexpr bool safe_find =
-                tavl_is_same<Value,
-                             typename tavl_find_t<rhs, Key>::value>::value;
-            using type = std::conditional_t<tavl_contain_v<rhs, K>,
-                                            std::conditional_t<safe_find<K, V>,
-                                                               std::true_type,
-                                                               std::false_type>,
-                                            std::false_type>;
-        };
-        template <typename L, typename R, typename C>
-        struct comp_merge
-        {
-            using type =
-                std::integral_constant<bool, L::value && R::value && C::value>;
+            template <typename K, typename V>
+            struct comp_impl
+            {
+                template <typename Key, typename Value>
+                static constexpr bool safe_find = tavl_is_same<
+                    Value,
+                    typename tavl_find_t<Right, Key>::value>::value;
+                using type =
+                    std::conditional_t<tavl_contain_v<Right, K>,
+                                       std::conditional_t<safe_find<K, V>,
+                                                          std::true_type,
+                                                          std::false_type>,
+                                       std::false_type>;
+            };
+            template <typename L, typename R, typename C>
+            struct comp_merge
+            {
+                using type =
+                    std::integral_constant<bool,
+                                           L::value && R::value && C::value>;
+            };
+            static constexpr bool value =
+                tavl_for_each_t<Left, comp_impl, comp_merge, std::true_type>::
+                    value;
         };
 
     public:
         static constexpr bool value =
-            tavl_for_each_t<lhs, comp_impl, comp_merge, std::true_type>::value;
+            comp_oneway<lhs, rhs>::value && comp_oneway<rhs, lhs>::value;
     };
     template <typename L, typename R>
     inline constexpr bool tavl_is_same_v = tavl_is_same<L, R>::value;
