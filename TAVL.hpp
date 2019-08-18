@@ -811,8 +811,10 @@ namespace tavl
                 using type = tavl_update_t<
                     Old,
                     typename Pair::first_type,
-                    typename Func<tavl_find_t<Old, typename Pair::first_type>,
-                                  typename Pair::second_type>::type>;
+                    typename Func<
+                        typename tavl_find_t<Old,
+                                             typename Pair::first_type>::value,
+                        typename Pair::second_type>::type>;
             };
             using type = typename std::conditional_t<
                 tavl_contain_v<TreeBefore, typename Pair::first_type>,
