@@ -783,6 +783,13 @@ namespace tavl
     };
     template <typename L, typename R>
     inline constexpr bool tavl_is_same_v = tavl_is_same<L, R>::value;
+    template <typename T, typename K, typename V>
+    struct tavl_update
+    {
+        using type = tavl_insert_t<tavl_remove_t<T, K>, K, V>;
+    };
+    template <typename T, typename K, typename V = std::true_type>
+    using tavl_update_t = typename tavl_update<T, K, V>::type;
     namespace Impl
     {
         template <typename T>
