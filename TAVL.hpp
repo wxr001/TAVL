@@ -790,6 +790,67 @@ namespace tavl
     };
     template <typename T, typename K, typename V = std::true_type>
     using tavl_update_t = typename tavl_update<T, K, V>::type;
+    template <template <typename, typename> typename Func,
+              typename Tree,
+              typename Tree2,
+              typename... Others>
+    struct tavl_union_with_func
+    {
+    private:
+        template <typename Key, typename Value>
+        struct for_each_item_in_Tree
+        {
+            using type = type_pair<Key, Value>;
+        };
+        template <typename TreeBefore, typename Pair>
+        struct for_each_merger
+        {
+            template <typename Old>
+            struct update_helper
+            {
+                using type = tavl_update_t<
+                    Old,
+                    typename Pair::first_type,
+                    typename Func<tavl_find_t<Old, typename Pair::first_type>,
+                                  typename Pair::second_type>::type>;
+            };
+            using type = typename std::conditional_t<
+                tavl_contain_v<TreeBefore, typename Pair::first_type>,
+                lazy_template<update_helper, TreeBefore>,
+                lazy_template<tavl_insert_t,
+                              TreeBefore,
+                              typename Pair::first_type,
+                              typename Pair::second_type>>::type;
+        };
+        using union_result =
+            tavl::tavl_for_each_middle_order_t<Tree2,
+                                               for_each_item_in_Tree,
+                                               for_each_merger,
+                                               Tree>;
+        template <template <template <typename, typename> typename,
+                            typename,
+                            typename,
+                            typename...>
+                  typename T,
+                  template <typename, typename>
+                  typename TT,
+                  typename... Args>
+        struct lazy
+        {
+            using type = T<TT, Args...>;
+        };
+
+    public:
+        using type = typename std::conditional_t<
+            sizeof...(Others) != 0,
+            lazy<tavl_union_with_func, Func, union_result, Others...>,
+            identity<identity<union_result>>>::type::type;
+    };
+    template <template <typename, typename> typename Func,
+              typename Tree,
+              typename... Trees>
+    using tavl_union_with_func_t =
+        typename tavl_union_with_func<Func, Tree, Trees...>::type;
     namespace Impl
     {
         template <typename T>
