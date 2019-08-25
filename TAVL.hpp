@@ -819,10 +819,10 @@ namespace tavl
             using type = typename std::conditional_t<
                 tavl_contain_v<TreeBefore, typename Pair::first_type>,
                 lazy_template<update_helper, TreeBefore>,
-                lazy_template<tavl_insert_t,
+                lazy_template<tavl_insert,
                               TreeBefore,
                               typename Pair::first_type,
-                              typename Pair::second_type>>::type;
+                              typename Pair::second_type>>::type::type;
         };
         using union_result =
             tavl::tavl_for_each_middle_order_t<Tree2,
