@@ -776,10 +776,16 @@ namespace tavl
                 tavl_for_each_t<Left, comp_impl, comp_merge, std::true_type>::
                     value;
         };
+        template <typename L, typename R>
+        static std::bool_constant<sizeof(comp_oneway<lhs, rhs>::value) &
+                                  sizeof(comp_oneway<rhs, lhs>::value)>
+            test(L*);
+        template <typename L, typename R>
+        static std::false_type test(...);
 
     public:
         static constexpr bool value =
-            comp_oneway<lhs, rhs>::value && comp_oneway<rhs, lhs>::value;
+            decltype(test<lhs, rhs>(reinterpret_cast<lhs*>(nullptr)))::value;
     };
     template <typename L, typename R>
     inline constexpr bool tavl_is_same_v = tavl_is_same<L, R>::value;
