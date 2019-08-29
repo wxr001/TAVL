@@ -785,7 +785,7 @@ namespace tavl
 
     public:
         static constexpr bool value =
-            decltype(test<lhs, rhs>(reinterpret_cast<lhs*>(nullptr)))::value;
+            decltype(test<lhs, rhs>(static_cast<lhs*>(nullptr)))::value;
     };
     template <typename L, typename R>
     inline constexpr bool tavl_is_same_v = tavl_is_same<L, R>::value;
