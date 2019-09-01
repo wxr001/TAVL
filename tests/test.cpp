@@ -592,8 +592,8 @@ namespace tavl
                       int_v<9>,
                       int_v<9>>,
             2,
-            int_v<3>,
-            int_v<3>>;
+            int_v<5>,
+            int_v<5>>;
         using test_is_same_more =
             tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
                       tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
@@ -799,7 +799,7 @@ namespace tavl
             static_assert(
                 !tavl_is_same_v<test_is_same_diff_order_a,
                                 test_is_same_diff_order_c>,
-                "test for trees with same keys but in different orders and different");
+                "test for trees with same keys but in different orders and different values");
             static_assert(
                 !tavl_is_same_v<test_is_same_normal, test_is_same_more> &&
                     !tavl_is_same_v<test_is_same_more, test_is_same_normal>,

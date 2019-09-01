@@ -777,8 +777,8 @@ namespace tavl
                     value;
         };
         template <typename L, typename R>
-        static std::bool_constant<sizeof(comp_oneway<lhs, rhs>::value) &
-                                  sizeof(comp_oneway<rhs, lhs>::value)>
+        static std::bool_constant<(comp_oneway<lhs, rhs>::value) &&
+                                  (comp_oneway<rhs, lhs>::value)>
             test(L*);
         template <typename L, typename R>
         static std::false_type test(...);
