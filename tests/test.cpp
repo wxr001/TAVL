@@ -88,7 +88,7 @@ namespace tavl
             Compiler::first_character_v<lhs...> >=
                 Compiler::first_character_v<rhs...>,
             std::conditional_t<
-                (Compiler::first_character_v<lhs...>>
+                (Compiler::first_character_v<lhs...> >
                  Compiler::first_character_v<rhs...>),
                 std::integral_constant<int, 1>,
                 typename compare<Compiler::ignore_one_t<lhs...>,
@@ -600,6 +600,62 @@ namespace tavl
                       1,
                       int_v<2>,
                       int_v<2>>;
+        using test_compare_tavl_template = tavl_node<
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<1>, int_v<1>>,
+                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
+                      1,
+                      int_v<2>,
+                      int_v<2>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
+                      empty_node,
+                      1,
+                      int_v<9>,
+                      int_v<9>>,
+            2,
+            int_v<5>,
+            int_v<5>>;
+        using test_compare_tavl_more_first = tavl_node<
+            tavl_node<empty_node,
+                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
+                      1,
+                      int_v<2>,
+                      int_v<2>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
+                      empty_node,
+                      1,
+                      int_v<9>,
+                      int_v<9>>,
+            2,
+            int_v<5>,
+            int_v<5>>;
+        using test_compare_tavl_less_first = tavl_node<
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<0>, int_v<1>>,
+                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
+                      1,
+                      int_v<2>,
+                      int_v<2>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
+                      empty_node,
+                      1,
+                      int_v<9>,
+                      int_v<9>>,
+            2,
+            int_v<5>,
+            int_v<5>>;
+        using test_compare_tavl_more_no_left = tavl_node<
+            tavl_node<empty_node,
+                      tavl_node<empty_node, empty_node, 0, int_v<3>, int_v<3>>,
+                      1,
+                      int_v<2>,
+                      int_v<2>>,
+            tavl_node<tavl_node<empty_node, empty_node, 0, int_v<7>, int_v<7>>,
+                      empty_node,
+                      1,
+                      int_v<9>,
+                      int_v<9>>,
+            2,
+            int_v<5>,
+            int_v<5>>;
         inline namespace TestFind
         {
             static_assert(
@@ -804,8 +860,20 @@ namespace tavl
                 !tavl_is_same_v<test_is_same_normal, test_is_same_more> &&
                     !tavl_is_same_v<test_is_same_more, test_is_same_normal>,
                 "test for trees one is the other's subset");
-
         } // namespace TestIsSame
+        inline namespace TestCompareTAVL
+        {
+            static_assert(compare_v<test_compare_tavl_less_first,
+                                    test_compare_tavl_template> < 0);
+            static_assert(compare_v<test_compare_tavl_template,
+                                    test_compare_tavl_more_first> < 0);
+            static_assert(compare_v<test_compare_tavl_more_no_left,
+                                    test_compare_tavl_template> > 0);
+            static_assert(compare_v<test_compare_tavl_template,
+                                    test_compare_tavl_more_no_left> < 0);
+            static_assert(compare_v<test_compare_tavl_less_first,
+                                    test_compare_tavl_less_first> == 0);
+        } // namespace TestCompareTAVL
     }     // namespace InHeaderDebug
 } // namespace tavl
 int main()
