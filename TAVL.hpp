@@ -797,7 +797,6 @@ namespace tavl
      * @brief A derived version of tavl_union_t for using as a merger in
      * tavl_for_each(t)
      * @note see tavl::tavl_union for more information
-     *
      */
     template <typename T1, typename T2, typename T3>
     using tavl_union_3 = tavl::tavl_union<T1, T2, T3>;
@@ -1172,6 +1171,16 @@ namespace tavl
               typename... Trees>
     using tavl_union_with_func_t =
         typename tavl_union_with_func<Func, Tree, Trees...>::type;
+    /*
+     * @brief A derived version of tavl_union_with_func_t for using as a merger
+     * in tavl_for_each(t)
+     * @note see tavl::tavl_union_with_func for more information
+     */
+    template <template <typename, typename> typename Func,
+              typename T1,
+              typename T2,
+              typename T3>
+    using _tavl_union_with_func_3 = tavl_union_with_func_t<Func, T1, T2, T3>;
     namespace Impl
     {
         template <typename T>
