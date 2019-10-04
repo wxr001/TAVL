@@ -1180,7 +1180,7 @@ namespace tavl
               typename T1,
               typename T2,
               typename T3>
-    using _tavl_union_with_func_3 = tavl_union_with_func_t<Func, T1, T2, T3>;
+    using _tavl_union_with_func_3 = tavl_union_with_func<Func, T1, T2, T3>;
     namespace Impl
     {
         template <typename T>
