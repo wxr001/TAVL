@@ -1063,6 +1063,20 @@ namespace tavl
             impl::another_tavl_helper<tavl_node<L2, R2, H2, K2, V2>,
                                       impl::end_of_tree_flag>>::value;
     };
+    template <typename L1, typename R1, int H1, typename K1, typename V1>
+    struct compare<tavl_node<L1, R1, H1, K1, V1>, empty_node>
+    {
+    private:
+    public:
+        static constexpr int value = 1;
+    };
+    template <typename L1, typename R1, int H1, typename K1, typename V1>
+    struct compare<empty_node, tavl_node<L1, R1, H1, K1, V1>>
+    {
+    private:
+    public:
+        static constexpr int value = -1;
+    };
     template <>
     struct compare<empty_node, empty_node>
     {
