@@ -1063,6 +1063,13 @@ namespace tavl
             impl::another_tavl_helper<tavl_node<L2, R2, H2, K2, V2>,
                                       impl::end_of_tree_flag>>::value;
     };
+    template <>
+    struct compare<empty_node, empty_node>
+    {
+    private:
+    public:
+        static constexpr int value = 0;
+    };
     /**
      * @brief set the value of K to V (even if K is not existed)
      * @tparam T AVL tree
