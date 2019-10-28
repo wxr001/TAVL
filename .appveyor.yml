@@ -6,13 +6,13 @@ build:
 
 environment:
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       ARCHITECTURE: x64
-      GEN: "Visual Studio 15 2017 Win64"
+      GEN: "Visual Studio 17 2019 Win64"
       CFG: Release
       BUILD_OUT: "x64-Release"
   NINJA_URL: https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-win.zip
-  MSVC_HOME: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community"
+  MSVC_HOME: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community"
 
 install:
   # Get Ninja
