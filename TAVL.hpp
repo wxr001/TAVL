@@ -1202,6 +1202,73 @@ namespace tavl
               typename T2,
               typename T3>
     using _tavl_union_with_func_3 = tavl_union_with_func<Func, T1, T2, T3>;
+    /**
+     * @brief create intersections between multiple trees and the value of
+     * result's node is the result of the given function
+     * @tparam T1 the first tree to examine
+     * @tparam Trees other trees
+     * @note Trees can be empty
+     */
+    template <template <typename Key, typename... Values> typename Func,
+              typename T1,
+              typename... Trees>
+    struct tavl_intersect_with_func
+    {
+    private:
+        template <typename Key, typename Value>
+        struct for_each_node
+        {
+            template <typename... T>
+            static Func<Key, T...> get_value(T...);
+            static auto            test()
+            {
+                return get_value(
+                    (std::declval<typename tavl_find_t<Trees, Key>::value>(),
+                     ...));
+            }
+            using type = std::conditional_t<
+                (tavl_contain_v<Trees, Key> && ...),
+                type_pair<Key,
+                          typename Func<Key,
+                                        typename tavl_find_t<T1, Key>::value,
+                                        typename tavl_find_t<Trees, Key>::
+                                            value...>::type>,
+                int>;
+        };
+        template <typename Previous, typename Current>
+        struct merger
+        {
+            using type = tavl_insert_t<Previous,
+                                       typename Current::first_type,
+                                       typename Current::second_type>;
+        };
+        template <typename Previous>
+        struct merger<Previous, int>
+        {
+            using type = Previous;
+        };
+
+    public:
+        using type =
+            tavl_for_each_middle_order_t<T1, for_each_node, merger, empty_node>;
+    };
+    template <template <typename Key, typename... Values> typename Func,
+              typename... Trees>
+    struct tavl_intersect_with_func<Func, empty_node, Trees...>
+    {
+        using type = empty_node;
+    };
+    /**
+     * @brief create intersections between multiple trees
+     * @tparam T1 the first tree to examine
+     * @tparam Trees other trees
+     * @note Trees can be empty
+     */
+    template <template <typename Key, typename... Values> typename Func,
+              typename Tree,
+              typename... Trees>
+    using tavl_intersect_with_func_t =
+        typename tavl_intersect_with_func<Func, Tree, Trees...>::type;
     namespace Impl
     {
         template <typename T>
