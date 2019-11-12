@@ -1269,6 +1269,44 @@ namespace tavl
               typename... Trees>
     using tavl_intersect_with_func_t =
         typename tavl_intersect_with_func<Func, Tree, Trees...>::type;
+    template <typename T1, typename T2>
+    struct tavl_difference
+    {
+        template <typename Key, typename Value>
+        struct for_each_in_t1
+        {
+            using type = std::conditional_t<!tavl_contain_v<T2, Key>,
+                                            kv_pair<Key, Value>,
+                                            empty_node>;
+        };
+        using type =
+            tavl_for_each_t<T1, for_each_in_t1, tavl_union_3, empty_node>;
+    };
+    template <typename T1, typename T2>
+    using tavl_difference_t = typename tavl_difference<T1, T2>::type;
+    template <template <typename key, typename Val1, typename Val2>
+              typename Func,
+              typename T1,
+              typename T2>
+    struct tavl_difference_with_func
+    {
+        template <typename K, typename V>
+        using call_func = kv_pair<
+            K,
+            typename Func<K, V, typename tavl_find_t<T2, K>::value>::type>;
+        template <typename Key, typename Value>
+        struct for_each_in_t1
+        {
+            using type = typename std::conditional_t<
+                !tavl_contain_v<T2, Key>,
+                lazy_template<call_func, Key, Value>,
+                identity<empty_node>>::type;
+        };
+        using type =
+            tavl_for_each_t<T1, for_each_in_t1, tavl_union_3, empty_node>;
+    };
+    template <typename T1, typename T2>
+    using tavl_difference_with_func_t = typename tavl_difference<T1, T2>::type;
     namespace Impl
     {
         template <typename T>
