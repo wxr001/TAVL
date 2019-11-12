@@ -1272,6 +1272,7 @@ namespace tavl
     template <typename T1, typename T2>
     struct tavl_difference
     {
+    private:
         template <typename Key, typename Value>
         struct for_each_in_t1
         {
@@ -1279,6 +1280,8 @@ namespace tavl
                                             kv_pair<Key, Value>,
                                             empty_node>;
         };
+
+    public:
         using type =
             tavl_for_each_t<T1, for_each_in_t1, tavl_union_3, empty_node>;
     };
@@ -1290,6 +1293,7 @@ namespace tavl
               typename T2>
     struct tavl_difference_with_func
     {
+    private:
         template <typename K, typename V>
         using call_func = kv_pair<
             K,
@@ -1302,11 +1306,38 @@ namespace tavl
                 lazy_template<call_func, Key, Value>,
                 identity<empty_node>>::type;
         };
+
+    public:
         using type =
             tavl_for_each_t<T1, for_each_in_t1, tavl_union_3, empty_node>;
     };
     template <typename T1, typename T2>
     using tavl_difference_with_func_t = typename tavl_difference<T1, T2>::type;
+    /**
+     * @brief check whether S1 is a subset of S2
+     * @note value is meaningless here.
+     */
+    template <typename S1, typename S2>
+    struct tavl_is_subset
+    {
+    private:
+        template <typename Key, typename>
+        struct check_exist
+        {
+            using type = std::bool_constant<tavl_contain_v<S2, Key>>;
+        };
+        template <typename L, typename R, typename C>
+        struct merge
+        {
+            using type = std::bool_constant<L::value && R::value && C::value>;
+        };
+
+    public:
+        static constexpr bool value =
+            tavl_for_each_t<S1, check_exist, merge, std::true_type>::value;
+    };
+    template <typename S1, typename S2>
+    inline constexpr bool tavl_is_subset_v = tavl_is_subset<S1, S2>::value;
     namespace Impl
     {
         template <typename T>
