@@ -90,7 +90,7 @@ matrix:
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 1000
     - clang --version
-  # Clang 7.0
+  # Clang 7
   - os: linux
     dist: xenial
     sudo: required
@@ -98,26 +98,26 @@ matrix:
       apt:
         sources:
         - ubuntu-toolchain-r-test
-        - llvm-toolchain-xenial-7.0
-        - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7.0 main'
+        - llvm-toolchain-xenial-7
+        - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-7 main'
           key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
         packages:
-        - clang-7.0
+        - clang-7
         - g++-7
         - ninja-build
         - tree
     language: cpp
     compiler: clang
     env:
-    - COMPILER=clang++-7.0
+    - COMPILER=clang++-7
     - GSL_CXX_STANDARD=17
     - BUILD_TYPE=Release
     before_install:
     - travis_wait sudo apt-get update -qq
-    - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-7.0 1000
-    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-7.0 1000
+    - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-7 1000
+    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-7 1000
     - clang --version
-  # Clang 8.0
+  # Clang 8
   - os: linux
     dist: xenial
     sudo: required
@@ -125,26 +125,26 @@ matrix:
       apt:
         sources:
         - ubuntu-toolchain-r-test
-        - llvm-toolchain-xenial-8.0
+        - llvm-toolchain-xenial-8
         - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main'
           key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
         packages:
-        - clang-8.0
+        - clang-8
         - g++-7
         - ninja-build
         - tree
     language: cpp
     compiler: clang
     env:
-    - COMPILER=clang++-8.0
+    - COMPILER=clang++-8
     - GSL_CXX_STANDARD=17
     - BUILD_TYPE=Release
     before_install:
     - travis_wait sudo apt-get update -qq
-    - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8.0 1000
-    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8.0 1000
+    - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 1000
+    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 1000
     - clang --version
-  # Clang 9.0
+  # Clang 9
   - os: linux
     dist: xenial
     sudo: required
@@ -152,24 +152,24 @@ matrix:
       apt:
         sources:
         - ubuntu-toolchain-r-test
-        - llvm-toolchain-xenial-9.0
+        - llvm-toolchain-xenial-9
         - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
           key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
         packages:
-        - clang-9.0
+        - clang-9
         - g++-7
         - ninja-build
         - tree
     language: cpp
     compiler: clang
     env:
-    - COMPILER=clang++-9.0
+    - COMPILER=clang++-9
     - GSL_CXX_STANDARD=17
     - BUILD_TYPE=Release
     before_install:
     - travis_wait sudo apt-get update -qq
-    - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9.0 1000
-    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9.0 1000
+    - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 1000
+    - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 1000
     - clang --version
   # XCode 10.0
   - os: osx
