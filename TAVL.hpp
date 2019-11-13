@@ -598,7 +598,7 @@ namespace tavl
      * @brief key-value pair that can be used by
      * tavl_for_each_middle_order_tree_merger
      */
-    template <typename K, typename V>
+    template <typename K, typename V = std::true_type>
     using kv_pair = tavl_node<empty_node, empty_node, 0, K, V>;
     /**
      * @brief Another implementation of merging function for
