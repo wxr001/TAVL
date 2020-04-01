@@ -139,13 +139,14 @@ namespace tavl
     {
         typename T::left;
         typename T::right;
-        decltype(T::height) i = 0;
+        T::height + 0;
         typename T::key;
-        typenaem T::value;
+        typename T::value;
     };
     template <typename T, typename K>
-    concept ValidNodeAndKey = Node<T> && (Comparable<typename T::key> ||
-                                          is_empty_node_v<T>);
+    concept ValidNodeAndKey = Node<T> &&
+                              +(Comparable<typename T::key, typename T::key> ||
+                                +is_empty_node_v<T>);
 #define REQUIRES(e) requires e
 #define COMPARABLE_CHECK(L, R) Comparable<L, R>
 #define NODE_CHECK(T) Node<T>
