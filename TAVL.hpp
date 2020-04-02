@@ -52,7 +52,8 @@ namespace tavl
     template <typename L, typename R>
     struct compare;
     template <typename L, typename R>
-    static constexpr int compare_v = compare<L, R>::value;
+    static constexpr int compare_v =
+        compare<L, R>::value > 0 ? 1 : compare<L, R>::value < 0 ? -1 : 0;
     // for lazy evaluation
     template <typename T>
     struct identity
@@ -157,6 +158,36 @@ namespace tavl
 #define NODE_CHECK(T)
 #define VALID_NK(N, K)
 #endif
+    namespace impl
+    {
+        template <typename T, typename K, int = compare_v<K, typename T::key>>
+        struct find_impl;
+        template <typename T, typename K>
+        struct find_nonmepty
+        {
+            using type = typename find_impl<T, K>::type;
+        };
+        template <typename K>
+        struct find_nonmepty<empty_node, K>
+        {
+            using type = empty_node;
+        };
+        template <typename T, typename K>
+        struct find_impl<T, K, 0>
+        {
+            using type = T;
+        };
+        template <typename T, typename K>
+        struct find_impl<T, K, -1>
+        {
+            using type = typename find_nonmepty<typename T::left, K>::type;
+        };
+        template <typename T, typename K>
+        struct find_impl<T, K, 1>
+        {
+            using type = typename find_nonmepty<typename T::right, K>::type;
+        };
+    } // namespace impl
     /**
      * @brief find an element whose key is K. Result is corresponding node
      * struct, empty_node otherwise.
@@ -167,29 +198,7 @@ namespace tavl
     REQUIRES(VALID_NK(T, K))
     struct tavl_find
     {
-    private:
-        static constexpr int comp_result = compare_v<K, typename T::key>;
-        template <typename Key, typename Tree>
-        struct lazy_less
-            : public identity<
-                  typename tavl_find<typename Tree::left, Key>::type>
-        {
-        };
-        template <typename Key, typename Tree>
-        struct lazy_more
-            : public identity<
-                  typename tavl_find<typename Tree::right, Key>::type>
-        {
-        };
-
-    public:
-        using type = typename std::conditional_t<
-            comp_result == 0,
-            identity<T>,
-            typename std::conditional_t<(comp_result > 0),
-                                        lazy_template<lazy_more, K, T>,
-                                        lazy_template<lazy_less, K, T>>::type>::
-            type;
+        using type = typename impl::find_impl<T, K>::type;
     };
     template <typename K>
     REQUIRES(VALID_NK(T, K))
@@ -198,89 +207,215 @@ namespace tavl
         using type = empty_node;
     };
     /**
-     * @brief find an element whose key is K. Return the sub-tree with K as its
-     * root, empty_node otherwise
+     * @brief find an element whose key is K. Return the sub-tree with K as
+     * its root, empty_node otherwise
      * @tparam T AVL tree
      * @tparam K key type
      */
     template <typename T, typename K>
     REQUIRES(VALID_NK(T, K))
     using tavl_find_t = typename tavl_find<T, K>::type;
-    // check whether there is an element whose key is K in the given AVL tree T
+    // check whether there is an element whose key is K in the given AVL
+    // tree T
     template <typename T, typename K>
     REQUIRES(VALID_NK(T, K))
     inline constexpr bool tavl_contain_v =
         !std::is_same_v<tavl_find_t<T, K>, empty_node>;
+    namespace impl
+    {
+        template <typename T>
+        struct min_impl
+        {
+            using type = typename min_impl<typename T::left>::type;
+        };
+        template <typename R, int H, typename K, typename V>
+        struct min_impl<tavl_node<empty_node, R, H, K, V>>
+        {
+            using type = tavl_node<empty_node, R, H, K, V>;
+        };
+        template <>
+        struct min_impl<empty_node>
+        {
+            using type = empty_node;
+        };
+        template <typename T>
+        struct max_impl
+        {
+            using type = typename max_impl<typename T::right>::type;
+        };
+        template <typename L, int H, typename K, typename V>
+        struct max_impl<tavl_node<L, empty_node, H, K, V>>
+        {
+            using type = tavl_node<L, empty_node, H, K, V>;
+        };
+        template <>
+        struct max_impl<empty_node>
+        {
+            using type = empty_node;
+        };
+    } // namespace impl
     /**
-     * @brief get the minimal element in the given AVL tree, or empty_node if
-     * there is no such element.
+     * @brief get the minimal element in the given AVL tree, or empty_node
+     * if there is no such element.
      * @tparam T AVL tree
      */
     template <typename T>
     REQUIRES(NODE_CHECK(T))
-    struct tavl_min
-    {
-    private:
-        template <typename TREE>
-        struct lazy
-            : public identity<typename tavl_min<typename TREE::left>::type>
-        {
-        };
-
-    public:
-        using type = typename std::conditional_t<
-            std::is_same_v<typename T::left, empty_node>,
-            lazy_template<identity, T>,
-            lazy_template<lazy, T>>::type::type;
-    };
-    template <>
-    struct tavl_min<empty_node>
-    {
-        using type = empty_node;
-    };
+    using tavl_min = impl::min_impl<T>;
     /**
-     * @brief get the minimal element in the given AVL tree, or empty_node if
-     * there is no such element.
+     * @brief get the minimal element in the given AVL tree, or empty_node
+     * if there is no such element.
      * @tparam T AVL tree
      */
     template <typename T>
     REQUIRES(NODE_CHECK(T))
     using tavl_min_t = typename tavl_min<T>::type;
     /**
-     * @brief get the maximal element in the given AVL tree, or empty_node if
-     * there is no such element.
+     * @brief get the maximal element in the given AVL tree, or empty_node
+     * if there is no such element.
      * @tparam T AVL tree
      */
     template <typename T>
     REQUIRES(NODE_CHECK(T))
-    struct tavl_max
-    {
-    private:
-        template <typename TREE>
-        struct lazy
-            : public identity<typename tavl_max<typename TREE::right>::type>
-        {
-        };
-
-    public:
-        using type = typename std::conditional_t<
-            std::is_same_v<typename T::right, empty_node>,
-            lazy_template<identity, T>,
-            lazy_template<lazy, T>>::type::type;
-    };
-    template <>
-    struct tavl_max<empty_node>
-    {
-        using type = empty_node;
-    };
+    using tavl_max = impl::max_impl<T>;
     /**
-     * @brief get the maximal element in the given AVL tree, or empty_node if
-     * there is no such element.
+     * @brief get the maximal element in the given AVL tree, or empty_node
+     * if there is no such element.
      * @tparam T AVL tree
      */
     template <typename T>
     REQUIRES(NODE_CHECK(T))
     using tavl_max_t = typename tavl_max<T>::type;
+    namespace impl
+    {
+        template <typename TREE>
+        using insert_reset_height =
+            tavl_node<typename TREE::left,
+                      typename TREE::right,
+                      (TREE::left::height > TREE::right::height ?
+                           TREE::left::height + 1 :
+                           TREE::right::height + 1),
+                      typename TREE::key,
+                      typename TREE::value>;
+        template <typename T,
+                  typename K,
+                  typename V,
+                  int = compare_v<K, typename T::key>>
+        struct insert_impl;
+        template <typename T, typename K, typename V>
+        struct insert_nonempty
+        {
+            using type =
+                insert_reset_height<typename insert_impl<T, K, V>::type>;
+        };
+        template <typename K, typename V>
+        struct insert_nonempty<empty_node, K, V>
+        {
+            using type = tavl_node<empty_node, empty_node, 0, K, V>;
+        };
+        template <typename T, typename K, typename V>
+        struct insert_impl<T, K, V, 0>
+        {
+            // K is existed
+            using type = Impl::invalid;
+        };
+        template <typename TREE, typename KL, typename VL>
+        struct insert_recursive_left
+        {
+            static_assert(!std::is_same_v<TREE, empty_node>);
+            using type = tavl_node<
+                typename insert_nonempty<typename TREE::left, KL, VL>::type,
+                typename TREE::right,
+                TREE::height,
+                typename TREE::key,
+                typename TREE::value>;
+        };
+        template <typename TREE, typename KL, typename VL>
+        struct insert_recursive_right
+        {
+            static_assert(!std::is_same_v<TREE, empty_node>);
+            using type = tavl_node<
+                typename TREE::left,
+                typename insert_nonempty<typename TREE::right, KL, VL>::type,
+                TREE::height,
+                typename TREE::key,
+                typename TREE::value>;
+        };
+        template <typename T,
+                  typename K,
+                  typename V,
+                  int = insert_recursive_left<T, K, V>::type::left::height -
+                        insert_recursive_left<T, K, V>::type::right::height>
+        struct insert_left_impl
+        {
+            using type = typename insert_recursive_left<T, K, V>::type;
+        };
+        template <typename T,
+                  typename K,
+                  typename V,
+                  bool double_rotate =
+                      compare_v<K,
+                                typename insert_recursive_left<T, K, V>::type::
+                                    left::key> == -1>
+        struct insert_left_rotate_or_double
+        {
+            using type = typename Impl::rotate_left<
+                typename insert_recursive_left<T, K, V>::type>::type;
+        };
+        template <typename T, typename K, typename V>
+        struct insert_left_rotate_or_double<T, K, V, false>
+        {
+            using type = typename Impl::double_left<
+                typename insert_recursive_left<T, K, V>::type>::type;
+        };
+        template <typename T, typename K, typename V>
+        struct insert_left_impl<T, K, V, 2>
+        {
+            using type = typename insert_left_rotate_or_double<T, K, V>::type;
+        };
+        template <typename T, typename K, typename V>
+        struct insert_impl<T, K, V, -1>
+        {
+            using type = typename insert_left_impl<T, K, V>::type;
+        };
+        template <typename T,
+                  typename K,
+                  typename V,
+                  int = insert_recursive_right<T, K, V>::type::left::height -
+                        insert_recursive_right<T, K, V>::type::right::height>
+        struct insert_right_impl
+        {
+            using type = typename insert_recursive_right<T, K, V>::type;
+        };
+        template <typename T,
+                  typename K,
+                  typename V,
+                  bool double_rotate =
+                      compare_v<K,
+                                typename insert_recursive_right<T, K, V>::type::
+                                    right::key> == 1>
+        struct insert_right_rotate_or_double
+        {
+            using type = typename Impl::rotate_right<
+                typename insert_recursive_right<T, K, V>::type>::type;
+        };
+        template <typename T, typename K, typename V>
+        struct insert_right_rotate_or_double<T, K, V, false>
+        {
+            using type = typename Impl::double_right<
+                typename insert_recursive_right<T, K, V>::type>::type;
+        };
+        template <typename T, typename K, typename V>
+        struct insert_right_impl<T, K, V, -2>
+        {
+            using type = typename insert_right_rotate_or_double<T, K, V>::type;
+        };
+        template <typename T, typename K, typename V>
+        struct insert_impl<T, K, V, 1>
+        {
+            using type = typename insert_right_impl<T, K, V>::type;
+        };
+    } // namespace impl
     /**
      * @brief insert an (K, V) element into given AVL tree T
      */
@@ -288,91 +423,9 @@ namespace tavl
     REQUIRES(VALID_NK(T, K))
     struct tavl_insert
     {
-    private:
-        template <typename TREE, typename KL, typename VL>
-        struct recursive_left
-        {
-            static_assert(!std::is_same_v<TREE, empty_node>);
-            using type = tavl_node<
-                typename tavl_insert<typename TREE::left, KL, VL>::type,
-                typename TREE::right,
-                TREE::height,
-                typename TREE::key,
-                typename TREE::value>;
-        };
-        template <typename TREE, typename KL, typename VL>
-        struct recursive_right
-        {
-            static_assert(!std::is_same_v<TREE, empty_node>);
-            using type = tavl_node<
-                typename TREE::left,
-                typename tavl_insert<typename TREE::right, KL, VL>::type,
-                TREE::height,
-                typename TREE::key,
-                typename TREE::value>;
-        };
-        template <typename TREE>
-        static constexpr int diff_height =
-            TREE::left::height - TREE::right::height;
-        template <typename TREE, typename KEY, typename VALUE>
-        struct lazy_insert_left
-            : public identity<typename std::conditional_t<
-                  diff_height<
-                      typename recursive_left<TREE, KEY, VALUE>::type> == 2,
-                  std::conditional_t<
-                      (compare_v<KEY,
-                                 typename recursive_left<TREE, KEY, VALUE>::
-                                     type::left::key> < 0),
-                      lazy_template<
-                          Impl::rotate_left,
-                          typename recursive_left<TREE, KEY, VALUE>::type>,
-                      lazy_template<
-                          Impl::double_left,
-                          typename recursive_left<TREE, KEY, VALUE>::type>>,
-                  lazy_template<recursive_left, TREE, KEY, VALUE>>::type::type>
-        {
-        };
-        template <typename TREE, typename KEY, typename VALUE>
-        struct lazy_insert_right
-            : public identity<typename std::conditional_t<
-                  diff_height<
-                      typename recursive_right<TREE, KEY, VALUE>::type> == -2,
-                  std::conditional_t<
-                      (compare_v<KEY,
-                                 typename recursive_right<TREE, KEY, VALUE>::
-                                     type::right::key> > 0),
-                      lazy_template<
-                          Impl::rotate_right,
-                          typename recursive_right<TREE, KEY, VALUE>::type>,
-                      lazy_template<
-                          Impl::double_right,
-                          typename recursive_right<TREE, KEY, VALUE>::type>>,
-                  lazy_template<recursive_right, TREE, KEY, VALUE>>::type::type>
-        {
-        };
-        static constexpr int comp_result = compare_v<K, typename T::key>;
-        template <typename TREE>
-        struct reset_height
-            : public identity<tavl_node<typename TREE::type::left,
-                                        typename TREE::type::right,
-                                        (TREE::type::left::height >
-                                                 TREE::type::right::height ?
-                                             TREE::type::left::height + 1 :
-                                             TREE::type::right::height + 1),
-                                        typename TREE::type::key,
-                                        typename TREE::type::value>>
-        {
-        };
-
     public:
-        using type = typename std::conditional_t<
-            comp_result == 0,
-            lazy_template<identity, Impl::invalid>,
-            lazy_template<reset_height,
-                          std::conditional_t<(comp_result > 0),
-                                             lazy_insert_right<T, K, V>,
-                                             lazy_insert_left<T, K, V>>>>::
-            type::type;
+        using type = impl::insert_reset_height<
+            typename impl::insert_impl<T, K, V>::type>;
     };
     template <typename K, typename V>
     REQUIRES(VALID_NK(T, K))
@@ -386,7 +439,184 @@ namespace tavl
     template <typename T, typename K, typename V = std::true_type>
     REQUIRES(VALID_NK(T, K))
     using tavl_insert_t = typename tavl_insert<T, K, V>::type;
+    namespace impl
+    {
+        template <typename TREE>
+        struct remove_reset_height
+        {
+            using type = tavl_node<typename TREE::left,
+                                   typename TREE::right,
+                                   (TREE::left::height > TREE::right::height ?
+                                        TREE::left::height + 1 :
+                                        TREE::right::height + 1),
+                                   typename TREE::key,
+                                   typename TREE::value>;
+        };
+        template <>
+        struct remove_reset_height<empty_node>
+        {
+            using type = empty_node;
+        };
+        template <typename TREE>
+        using remove_reset_height_t = typename remove_reset_height<TREE>::type;
+        template <typename T,
+                  typename K,
+                  int comp = compare_v<K, typename T::key>>
+        struct remove_impl;
+        template <typename T, typename K>
+        struct remove_nonempty
+        {
+            using type =
+                remove_reset_height_t<typename remove_impl<T, K>::type>;
+        };
+        template <typename K>
+        struct remove_nonempty<empty_node, K>
+        {
+            using type = empty_node;
+        };
+        template <typename TREE, typename KEY>
+        struct remove_recursion_left
+        {
+            using type = tavl_node<
+                typename remove_nonempty<typename TREE::left, KEY>::type,
+                typename TREE::right,
+                TREE::height,
+                typename TREE::key,
+                typename TREE::value>;
+        };
+        template <typename TREE, typename KEY>
+        struct remove_recursion_right
+        {
+            using type = tavl_node<
+                typename TREE::left,
+                typename remove_nonempty<typename TREE::right, KEY>::type,
+                TREE::height,
+                typename TREE::key,
+                typename TREE::value>;
+        };
+        // do remove
+        template <typename TREE, typename K>
+        struct do_remove
+        {
+            using type = tavl_node<
+                typename TREE::left,
+                typename remove_recursion_right<
+                    TREE,
+                    typename tavl_min_t<typename TREE::right>::key>::type::
+                    right,
+                ((TREE::left::height >
+                  remove_recursion_right<
+                      TREE,
+                      typename tavl_min_t<typename TREE::right>::key>::type::
+                      right::height) ?
 
+                     TREE::left::height + 1 :
+                     remove_recursion_right<
+                         TREE,
+                         typename tavl_min_t<typename TREE::right>::key>::type::
+                             right::height +
+                         1),
+                typename tavl_min_t<typename TREE::right>::key,
+                typename tavl_min_t<typename TREE::right>::value>;
+        };
+        template <typename R, int H, typename K, typename V, typename KEY>
+        struct do_remove<tavl_node<empty_node, R, H, K, V>, KEY>
+        {
+            using type = R;
+        };
+        template <typename L, int H, typename K, typename V, typename KEY>
+        struct do_remove<tavl_node<L, empty_node, H, K, V>, KEY>
+        {
+            using type = L;
+        };
+        template <int H, typename K, typename V, typename KEY>
+        struct do_remove<tavl_node<empty_node, empty_node, H, K, V>, KEY>
+        {
+            using type = empty_node;
+        };
+        template <typename T, typename K>
+        struct remove_impl<T, K, 0>
+        {
+            using type = remove_reset_height_t<typename do_remove<T, K>::type>;
+        };
+        template <
+            typename TREE,
+            typename KEY,
+            bool direct_recursion =
+                remove_recursion_right<TREE, KEY>::type::left::height -
+                    remove_recursion_right<TREE, KEY>::type::right::height !=
+                2>
+        struct remove_right
+        {
+            using type = typename remove_recursion_right<TREE, KEY>::type;
+        };
+        template <
+            typename TREE,
+            typename KEY,
+            bool rotate =
+                remove_recursion_right<TREE, KEY>::type::left::left::height >=
+                remove_recursion_right<TREE, KEY>::type::left::right::height>
+        struct remove_rotate_or_double_right
+        {
+            using type = typename Impl::rotate_left<
+                typename remove_recursion_right<TREE, KEY>::type>::type;
+        };
+        template <typename TREE, typename KEY>
+        struct remove_rotate_or_double_right<TREE, KEY, false>
+        {
+            using type = typename Impl::double_left<
+                typename remove_recursion_right<TREE, KEY>::type>::type;
+        };
+        template <typename TREE, typename KEY>
+        struct remove_right<TREE, KEY, false>
+        {
+            using type =
+                typename remove_rotate_or_double_right<TREE, KEY>::type;
+        };
+        template <typename T, typename K>
+        struct remove_impl<T, K, 1>
+        {
+            using type = typename remove_right<T, K>::type;
+        };
+        template <
+            typename TREE,
+            typename KEY,
+            bool direct_recursion =
+                remove_recursion_left<TREE, KEY>::type::left::height -
+                    remove_recursion_left<TREE, KEY>::type::right::height !=
+                -2>
+        struct remove_left
+        {
+            using type = typename remove_recursion_left<TREE, KEY>::type;
+        };
+        template <
+            typename TREE,
+            typename KEY,
+            bool rotate =
+                remove_recursion_left<TREE, KEY>::type::right::right::height >=
+                remove_recursion_left<TREE, KEY>::type::right::left::height>
+        struct remove_rotate_or_double_left
+        {
+            using type = typename Impl::rotate_right<
+                typename remove_recursion_left<TREE, KEY>::type>::type;
+        };
+        template <typename TREE, typename KEY>
+        struct remove_rotate_or_double_left<TREE, KEY, false>
+        {
+            using type = typename Impl::double_right<
+                typename remove_recursion_left<TREE, KEY>::type>::type;
+        };
+        template <typename TREE, typename KEY>
+        struct remove_left<TREE, KEY, false>
+        {
+            using type = typename remove_rotate_or_double_left<TREE, KEY>::type;
+        };
+        template <typename T, typename K>
+        struct remove_impl<T, K, -1>
+        {
+            using type = typename remove_left<T, K>::type;
+        };
+    } // namespace impl
     /**
      * @brief try to remopve the element whose key is K
      */
@@ -394,110 +624,9 @@ namespace tavl
     REQUIRES(VALID_NK(T, K))
     struct tavl_remove
     {
-    private:
-        static constexpr int comp_result = compare_v<K, typename T::key>;
-        template <typename TREE>
-        static constexpr int diff_height =
-            TREE::left::height - TREE::right::height;
-        template <typename TREE, typename KEY>
-        struct recursion_left
-            : public identity<tavl_node<
-                  typename tavl_remove<typename TREE::left, KEY>::type,
-                  typename TREE::right,
-                  TREE::height,
-                  typename TREE::key,
-                  typename TREE::value>>
-        {
-        };
-        template <typename TREE, typename KEY>
-        struct recursion_right
-            : public identity<tavl_node<
-                  typename TREE::left,
-                  typename tavl_remove<typename TREE::right, KEY>::type,
-                  TREE::height,
-                  typename TREE::key,
-                  typename TREE::value>>
-        {
-        };
-        template <typename TREE, typename KEY>
-        struct lazy_left
-            : public identity<typename std::conditional_t<
-                  diff_height<typename recursion_left<TREE, KEY>::type> == -2,
-                  std::conditional_t<
-                      recursion_left<TREE, KEY>::type::right::right::height >=
-                          recursion_left<TREE, KEY>::type::right::left::height,
-                      lazy_template<Impl::rotate_right,
-                                    typename recursion_left<TREE, KEY>::type>,
-                      lazy_template<Impl::double_right,
-                                    typename recursion_left<TREE, KEY>::type>>,
-                  lazy_template<recursion_left, TREE, KEY>>::type::type>
-        {
-        };
-        template <typename TREE, typename KEY>
-        struct lazy_right
-            : public identity<typename std::conditional_t<
-                  diff_height<typename recursion_right<TREE, KEY>::type> == 2,
-                  std::conditional_t<
-                      (recursion_right<TREE, KEY>::type::left::left::height >=
-                       recursion_right<TREE, KEY>::type::left::right::height),
-                      lazy_template<Impl::rotate_left,
-                                    typename recursion_right<TREE, KEY>::type>,
-                      lazy_template<Impl::double_left,
-                                    typename recursion_right<TREE, KEY>::type>>,
-                  lazy_template<recursion_right, TREE, KEY>>::type::type>
-        {
-        };
-        template <typename TREE>
-        using lazy_current_rrecursive_right =
-            recursion_right<TREE,
-                            typename tavl_min_t<typename TREE::right>::key>;
-        template <typename TREE, typename KEY>
-        struct lazy_current
-            : public std::conditional_t<
-                  std::is_same_v<typename TREE::left, empty_node> ||
-                      std::is_same_v<typename TREE::right, empty_node>,
-                  std::conditional_t<
-                      std::is_same_v<typename TREE::left, empty_node>,
-                      identity<typename TREE::right>,
-                      identity<typename TREE::left>>,
-                  identity<tavl_node<
-                      typename TREE::left,
-                      typename lazy_current_rrecursive_right<TREE>::type::right,
-                      ((TREE::left::height > lazy_current_rrecursive_right<
-                                                 TREE>::type::right::height) ?
-
-                           TREE::left::height + 1 :
-                           lazy_current_rrecursive_right<
-                               TREE>::type::right::height +
-                               1),
-                      typename tavl_min_t<typename TREE::right>::key,
-                      typename tavl_min_t<typename TREE::right>::value>>>
-        {
-        };
-        template <typename TREE>
-        struct reset_height
-            : public identity<std::conditional_t<
-                  std::is_same_v<typename TREE::type, empty_node>,
-                  empty_node,
-                  tavl_node<typename TREE::type::left,
-                            typename TREE::type::right,
-                            (TREE::type::left::height >
-                                     TREE::type::right::height ?
-                                 TREE::type::left::height + 1 :
-                                 TREE::type::right::height + 1),
-                            typename TREE::type::key,
-                            typename TREE::type::value>>>
-        {
-        };
-
     public:
-        using type = typename std::conditional_t<
-            (comp_result > 0),
-            lazy_template<reset_height, lazy_right<T, K>>,
-            std::conditional_t<
-                (comp_result < 0),
-                lazy_template<reset_height, lazy_left<T, K>>,
-                lazy_template<reset_height, lazy_current<T, K>>>>::type::type;
+        using type =
+            impl::remove_reset_height_t<typename impl::remove_impl<T, K>::type>;
     };
     template <typename K>
     REQUIRES(VALID_NK(T, K))
@@ -524,15 +653,15 @@ namespace tavl
      * current-node-result> for each non-empty node
      * @tparam T AVL tree
      * @tparam F 'function' need to apply on the node, which should have two
-     * parameters and a member type named type to 'store' the result. Note that
-     * F should handle default value produced by empty_node properly.
+     * parameters and a member type named type to 'store' the result. Note
+     * that F should handle default value produced by empty_node properly.
      * @tparam M class used to merge results from left tree, right tree and
      * current result into a single result(a member type named type)
      * @tparam D default value for empty_node
-     * @note Using default parameters will always produce void as result unless
-     * some errors in F is made. So the result type of default version is
-     * meaningless. Therefore you can use some undefined member types to 'stop'
-     * for_each and show error messages.
+     * @note Using default parameters will always produce void as result
+     * unless some errors in F is made. So the result type of default
+     * version is meaningless. Therefore you can use some undefined member
+     * types to 'stop' for_each and show error messages.
      */
     template <typename T,
               template <typename K, typename V>
@@ -544,9 +673,6 @@ namespace tavl
     struct tavl_for_each
     {
     private:
-        static constexpr bool is_left_empty = is_empty_node_v<typename T::left>;
-        static constexpr bool is_right_empty =
-            is_empty_node_v<typename T::right>;
         using result = typename M<
             typename tavl_for_each<typename T::left, F, M, D>::type,
             typename tavl_for_each<typename T::right, F, M, D>::type,
@@ -568,15 +694,15 @@ namespace tavl
      * current-node-result> for each non-empty node
      * @tparam T AVL tree
      * @tparam F 'function' need to apply on the node, which should have two
-     * parameters and a member type named type to 'store' the result. Note that
-     * F should handle default value produced by empty_node properly.
+     * parameters and a member type named type to 'store' the result. Note
+     * that F should handle default value produced by empty_node properly.
      * @tparam M class used to merge results from left tree, right tree and
      * current result into a single result(a member type named type)
      * @tparam D default value for empty_node
-     * @note Using default parameters will always produce void as result unless
-     * some errors in F is made. So the result type of default version is
-     * meaningless. Therefore you can use some undefined member types to 'stop'
-     * for_each and show error messages.
+     * @note Using default parameters will always produce void as result
+     * unless some errors in F is made. So the result type of default
+     * version is meaningless. Therefore you can use some undefined member
+     * types to 'stop' for_each and show error messages.
      */
     template <typename T,
               template <typename K, typename V>
@@ -603,9 +729,11 @@ namespace tavl
     using kv_pair = tavl_node<empty_node, empty_node, 0, K, V>;
     /**
      * @brief Another implementation of merging function for
-     * tavl_for_each_middle_order used for creating a new Tree from the old one
-     * @note Result type of the 'function' used in tavl_for_each_middle_order
-     * should have sub-type 'key' && 'value' ( or using kv_pair<Key, Value> )
+     * tavl_for_each_middle_order used for creating a new Tree from the old
+     * one
+     * @note Result type of the 'function' used in
+     * tavl_for_each_middle_order should have sub-type 'key' && 'value' ( or
+     * using kv_pair<Key, Value> )
      */
     template <typename Previous, typename Current>
     struct tavl_for_each_middle_order_tree_merger
@@ -614,22 +742,76 @@ namespace tavl
                                    typename Current::key,
                                    typename Current::value>;
     };
+    namespace impl
+    {
+        template <typename T,
+                  template <typename K, typename V>
+                  typename F,
+                  template <typename B, typename C>
+                  typename M,
+                  typename L>
+        struct for_each_mid_impl;
+        template <typename T,
+                  template <typename K, typename V>
+                  typename F,
+                  template <typename B, typename C>
+                  typename M,
+                  typename L>
+        struct for_each_mid_recursive
+        {
+            using type = typename for_each_mid_impl<T, F, M, L>::type;
+        };
+        template <template <typename K, typename V> typename F,
+                  template <typename B, typename C>
+                  typename M,
+                  typename L>
+        struct for_each_mid_recursive<empty_node, F, M, L>
+        {
+            using type = L;
+        };
+        template <typename T,
+                  template <typename K, typename V>
+                  typename F,
+                  template <typename B, typename C>
+                  typename M,
+                  typename L>
+        struct for_each_mid_impl
+        {
+            using type = typename for_each_mid_recursive<
+                typename T::right,
+                F,
+                M,
+                typename M<
+                    typename for_each_mid_recursive<typename T::left, F, M, L>::
+                        type,
+                    typename F<typename T::key,
+                               typename T::value>::type>::type>::type;
+        };
+        template <template <typename K, typename V> typename F,
+                  template <typename B, typename C>
+                  typename M,
+                  typename L>
+        struct for_each_mid_impl<empty_node, F, M, L>
+        {
+            using type = L;
+        };
+    } // namespace impl
     /**
-     * @brief apply F<key, value> and M<previous, current-node-result> for each
-     * non-empty node in the middle order (that is ,left-tree -> current-node ->
-     * right-tree)
+     * @brief apply F<key, value> and M<previous, current-node-result> for
+     * each non-empty node in the middle order (that is ,left-tree ->
+     * current-node -> right-tree)
      * @tparam T AVL tree
      * @tparam F 'function' need to apply on the node, which should have two
-     * parameters and a member type named type to 'store' the result. Note that
-     * F should handle default value produced by empty_node properly.
+     * parameters and a member type named type to 'store' the result. Note
+     * that F should handle default value produced by empty_node properly.
      * @tparam M class used to merge results from previous results (after
      * merging) and current result into a single result(a member type named
      * type)
      * @tparam Last initial value
-     * @note Using default parameters will always produce void as result unless
-     * some errors in F is made. So the result type of default version is
-     * meaningless. Therefore you can use some undefined member types to 'stop'
-     * for_each and show error messages.
+     * @note Using default parameters will always produce void as result
+     * unless some errors in F is made. So the result type of default
+     * version is meaningless. Therefore you can use some undefined member
+     * types to 'stop' for_each and show error messages.
      */
     template <typename T,
               template <typename K, typename V>
@@ -640,37 +822,13 @@ namespace tavl
     REQUIRES(NODE(T))
     struct tavl_for_each_middle_order
     {
-    private:
-        static constexpr bool is_left_empty = is_empty_node_v<typename T::left>;
-        static constexpr bool is_right_empty =
-            is_empty_node_v<typename T::right>;
-        template <typename Tree, typename LastR = Last>
-        using recursive = std::conditional_t<
-            std::is_same_v<Tree, empty_node>,
-            LastR,
-            typename tavl_for_each_middle_order<Tree, F, M, LastR>::type>;
-        using left_result = recursive<typename T::left>;
-        using current_result =
-            typename F<typename T::key, typename T::value>::type;
-        using merge_left_current =
-            typename M<left_result, current_result>::type;
-        using right_result = recursive<typename T::right, merge_left_current>;
-
     public:
-        using type = right_result;
-    };
-    template <template <typename K, typename V> typename F,
-              template <typename B, typename C>
-              typename M,
-              typename Last>
-    struct tavl_for_each_middle_order<empty_node, F, M, Last>
-    {
-        using type = Last;
+        using type = typename impl::for_each_mid_impl<T, F, M, Last>::type;
     };
     /**
-     * @brief apply F<key, value> and M<previous, current-node-result> for each
-     * non-empty node in the middle order (that is ,left-tree -> current-node ->
-     * right-tree)
+     * @brief apply F<key, value> and M<previous, current-node-result> for
+     * each non-empty node in the middle order (that is ,left-tree ->
+     * current-node -> right-tree)
      * @tparam T AVL tree
      * @tparam F 'function' need to apply on the node, which should have two
      * parameters and a member type named "type" to 'store' the result. Note
@@ -679,10 +837,10 @@ namespace tavl
      * merging) and current result into a single result(a member type named
      * type)
      * @tparam Last initial value
-     * @note Using default parameters will always produce void as result unless
-     * some errors in F is made. So the result type of default version is
-     * meaningless. Therefore you can use some undefined member types to 'stop'
-     * for_each and show error messages.
+     * @note Using default parameters will always produce void as result
+     * unless some errors in F is made. So the result type of default
+     * version is meaningless. Therefore you can use some undefined member
+     * types to 'stop' for_each and show error messages.
      */
     template <typename T,
               template <typename K, typename V>
@@ -740,27 +898,15 @@ namespace tavl
      */
     template <typename Tree, typename... Trees>
     using tavl_intersect_t = typename tavl_intersect<Tree, Trees...>::type;
-    /**
-     * @brief computes the union of two sets
-     * @tparam Tree the first tree to be computed
-     * @tparam Tree2 the second tree to be computed
-     * @tparam Others other trees to be computed (may be empty)
-     * @note If the same key is shown in multiple trees, the former one will be
-     * used regardless of the value of those elements.
-     * See tavl_union_with_func is another version that supports user
-     * defined actions for conflicts between different trees
-     */
-    template <typename Tree, typename Tree2, typename... Others>
-    struct tavl_union
+    namespace impl
     {
-    private:
         template <typename Key, typename Value>
-        struct for_each_item_in_Tree
+        struct union_for_each_item_in_Tree
         {
             using type = type_pair<Key, Value>;
         };
         template <typename TreeBefore, typename Pair>
-        struct for_each_merger
+        struct union_for_each_merger
         {
             using type = typename std::conditional_t<
                 tavl_contain_v<TreeBefore, typename Pair::first_type>,
@@ -770,30 +916,58 @@ namespace tavl
                               typename Pair::first_type,
                               typename Pair::second_type>>::type;
         };
-        using union_result =
-            tavl::tavl_for_each_middle_order_t<Tree2,
-                                               for_each_item_in_Tree,
-                                               for_each_merger,
-                                               Tree>;
+    } // namespace impl
+    /**
+     * @brief computes the union of two sets
+     * @tparam Tree the first tree to be computed
+     * @tparam Tree2 the second tree to be computed
+     * @tparam Others other trees to be computed (may be empty)
+     * @note If the same key is shown in multiple trees, the former one will
+     * be used regardless of the value of those elements. See
+     * tavl_union_with_func is another version that supports user defined
+     * actions for conflicts between different trees
+     */
+    template <typename Tree, typename Tree2, typename... Others>
+    struct tavl_union
+    {
+    private:
+        using union_result = tavl::tavl_for_each_middle_order_t<
+            Tree2,
+            impl::union_for_each_item_in_Tree,
+            impl::union_for_each_merger,
+            Tree>;
 
     public:
-        using type = typename std::conditional_t<
-            sizeof...(Others) != 0,
-            lazy_template<tavl_union, union_result, Others...>,
-            identity<identity<union_result>>>::type::type;
+        using type = typename tavl_union<union_result, Others...>::type;
+    };
+    template <typename Tree, typename Tree2>
+    struct tavl_union<Tree, Tree2>
+    {
+        using type = tavl::tavl_for_each_middle_order_t<
+            Tree2,
+            impl::union_for_each_item_in_Tree,
+            impl::union_for_each_merger,
+            Tree>;
     };
     /**
      * @brief computes the union of two sets
      * @tparam Tree the first tree to be computed
      * @tparam Tree2 the second tree to be computed
      * @tparam Others other trees to be computed (may be empty)
-     * @note If the same key is shown in multiple trees, the former one will be
-     * used regardless of the value of those elements.
-     * See tavl_union_with_func is another version that supports user
-     * defined actions for conflicts between different trees
+     * @note If the same key is shown in multiple trees, the former one will
+     * be used regardless of the value of those elements. See
+     * tavl_union_with_func is another version that supports user defined
+     * actions for conflicts between different trees
      */
     template <typename Tree, typename... Trees>
     using tavl_union_t = typename tavl_union<Tree, Trees...>::type;
+    /*
+     * @brief A derived version of tavl_union_t for using as a merger in
+     * tavl_for_each_middle_order(t)
+     * @note see tavl::tavl_union for more information
+     */
+    template <typename T1, typename T2>
+    using tavl_union_2 = tavl::tavl_union<T1, T2>;
     /*
      * @brief A derived version of tavl_union_t for using as a merger in
      * tavl_for_each(t)
@@ -805,6 +979,41 @@ namespace tavl
     struct tavl_is_same : std::is_same<Lhs, Rhs>
     {
     };
+    namespace impl
+    {
+        template <
+            typename L,
+            typename R,
+            bool = std::is_same_v<
+                typename L::key,
+                typename tavl_find_t<R, typename L::key>::key>&&
+                std::is_same_v<typename L::value,
+                               typename tavl_find_t<R, typename L::key>::value>>
+        struct comp_oneway;
+        template <typename L, typename R>
+        struct comp_oneway_nonempty
+        {
+            static constexpr bool value = comp_oneway<L, R>::value;
+        };
+        template <typename R>
+        struct comp_oneway_nonempty<empty_node, R>
+        {
+            static constexpr bool value = true;
+        };
+        template <typename L, typename R, bool KVInR>
+        struct comp_oneway
+        {
+            static constexpr bool value =
+                comp_oneway_nonempty<typename L::left, R>::value &&
+                comp_oneway_nonempty<typename L::right, R>::value;
+        };
+        template <typename L, typename R>
+        struct comp_oneway<L, R, false>
+        {
+            static constexpr bool value = false;
+        };
+
+    } // namespace impl
     template <typename L1,
               typename R1,
               int H1,
@@ -821,37 +1030,9 @@ namespace tavl
     private:
         using lhs = tavl_node<L1, R1, H1, K1, V1>;
         using rhs = tavl_node<L2, R2, H2, K2, V2>;
-        template <typename Left, typename Right>
-        struct comp_oneway
-        {
-            template <typename K, typename V>
-            struct comp_impl
-            {
-                template <typename Key, typename Value>
-                static constexpr bool safe_find = tavl_is_same<
-                    Value,
-                    typename tavl_find_t<Right, Key>::value>::value;
-                using type =
-                    std::conditional_t<tavl_contain_v<Right, K>,
-                                       std::conditional_t<safe_find<K, V>,
-                                                          std::true_type,
-                                                          std::false_type>,
-                                       std::false_type>;
-            };
-            template <typename L, typename R, typename C>
-            struct comp_merge
-            {
-                using type =
-                    std::integral_constant<bool,
-                                           L::value && R::value && C::value>;
-            };
-            static constexpr bool value =
-                tavl_for_each_t<Left, comp_impl, comp_merge, std::true_type>::
-                    value;
-        };
         template <typename L, typename R>
-        static std::bool_constant<(comp_oneway<lhs, rhs>::value) &&
-                                  (comp_oneway<rhs, lhs>::value)>
+        static std::bool_constant<(impl::comp_oneway<lhs, rhs>::value) &&
+                                  (impl::comp_oneway<rhs, lhs>::value)>
             test(L*);
         template <typename L, typename R>
         static std::false_type test(...);
@@ -884,15 +1065,24 @@ namespace tavl
         template <typename T, typename... Ts>
         struct another_tavl_helper;
         template <typename T, typename... Ts>
-        struct another_tavl_helper_cur
+        struct another_tavl_helper_cur;
+        template <typename L, int H, typename K, typename V, typename... Ts>
+        struct another_tavl_helper_cur<tavl_node<L, empty_node, H, K, V>, Ts...>
         {
-            using current = T;
-            using next    = typename std::conditional_t<
-                is_empty_node_v<typename T::right>,
-                identity_helper<another_tavl_helper, Ts...>,
-                identity_helper<another_tavl_helper,
-                                typename T::right,
-                                Ts...>>::type;
+            using current               = tavl_node<L, empty_node, H, K, V>;
+            using next                  = another_tavl_helper<Ts...>;
+            static constexpr bool value = false;
+        };
+        template <typename L,
+                  typename R,
+                  int H,
+                  typename K,
+                  typename V,
+                  typename... Ts>
+        struct another_tavl_helper_cur<tavl_node<L, R, H, K, V>, Ts...>
+        {
+            using current               = tavl_node<L, R, H, K, V>;
+            using next                  = another_tavl_helper<R, Ts...>;
             static constexpr bool value = false;
         };
         template <>
@@ -1105,17 +1295,17 @@ namespace tavl
     template <typename T, typename K, typename V = std::true_type>
     using tavl_update_t = typename tavl_update<T, K, V>::type;
     /**
-     * @brief computes the union of two sets(and perform user-defined actions
-     * for conflicts)
-     * @tparam Func when conflicting typename Func<value1, value2>::type is used
-     * as the value of the result node. The two arguments of the Func template
-     * are the values of two trees(nodes, actually)
+     * @brief computes the union of two sets(and perform user-defined
+     * actions for conflicts)
+     * @tparam Func when conflicting typename Func<value1, value2>::type is
+     * used as the value of the result node. The two arguments of the Func
+     * template are the values of two trees(nodes, actually)
      * @tparam Tree the first tree to be computed
      * @tparam Tree2 the second tree to be computed
      * @tparam Others other trees to be computed (may be empty)
-     * @note If the same key is shown in multiple trees, Func<...>::type will be
-     * used. See tavl_union is a simple version that always use the first value
-     * as its result
+     * @note If the same key is shown in multiple trees, Func<...>::type
+     * will be used. See tavl_union is a simple version that always use the
+     * first value as its result
      */
     template <template <typename, typename> typename Func,
               typename Tree,
@@ -1176,17 +1366,17 @@ namespace tavl
             identity<identity<union_result>>>::type::type;
     };
     /**
-     * @brief computes the union of two sets(and perform user-defined actions
-     * for conflicts)
-     * @tparam Func when conflicting typename Func<value1, value2>::type is used
-     * as the value of the result node. The two arguments of the Func template
-     * are the values of two trees(nodes, actually)
+     * @brief computes the union of two sets(and perform user-defined
+     * actions for conflicts)
+     * @tparam Func when conflicting typename Func<value1, value2>::type is
+     * used as the value of the result node. The two arguments of the Func
+     * template are the values of two trees(nodes, actually)
      * @tparam Tree the first tree to be computed
      * @tparam Tree2 the second tree to be computed
      * @tparam Others other trees to be computed (may be empty)
-     * @note If the same key is shown in multiple trees, Func<...>::type will be
-     * used. See tavl_union is a simple version that always use the first value
-     * as its result
+     * @note If the same key is shown in multiple trees, Func<...>::type
+     * will be used. See tavl_union is a simple version that always use the
+     * first value as its result
      */
     template <template <typename, typename> typename Func,
               typename Tree,
@@ -1194,8 +1384,8 @@ namespace tavl
     using tavl_union_with_func_t =
         typename tavl_union_with_func<Func, Tree, Trees...>::type;
     /*
-     * @brief A derived version of tavl_union_with_func_t for using as a merger
-     * in tavl_for_each(t)
+     * @brief A derived version of tavl_union_with_func_t for using as a
+     * merger in tavl_for_each(t)
      * @note see tavl::tavl_union_with_func for more information
      */
     template <template <typename, typename> typename Func,
@@ -1343,75 +1533,75 @@ namespace tavl
     {
         template <typename T>
         struct rotate_left
-            : public identity<tavl_node<
-                  typename T::left::left,
-                  tavl_node<typename T::left::right,
-                            typename T::right,
-                            (T::left::right::height > T::right::height ?
-                                 T::left::right::height + 1 :
-                                 T::right::height + 1),
-                            typename T::key,
-                            typename T::value>,
-                  (T::left::left::height >
-                           (T::left::right::height > T::right::height ?
-                                T::left::right::height + 1 :
-                                T::right::height + 1) ?
-                       T::left::left::height + 1 :
-                       (T::left::right::height > T::right::height ?
-                            T::left::right::height + 1 :
-                            T::right::height + 1) +
-                           1),
-                  typename T::left::key,
-                  typename T::left::value>>
         {
             static_assert(!std::is_same_v<T, empty_node>);
+            using type =
+                tavl_node<typename T::left::left,
+                          tavl_node<typename T::left::right,
+                                    typename T::right,
+                                    (T::left::right::height > T::right::height ?
+                                         T::left::right::height + 1 :
+                                         T::right::height + 1),
+                                    typename T::key,
+                                    typename T::value>,
+                          (T::left::left::height >
+                                   (T::left::right::height > T::right::height ?
+                                        T::left::right::height + 1 :
+                                        T::right::height + 1) ?
+                               T::left::left::height + 1 :
+                               (T::left::right::height > T::right::height ?
+                                    T::left::right::height + 1 :
+                                    T::right::height + 1) +
+                                   1),
+                          typename T::left::key,
+                          typename T::left::value>;
         };
         template <typename T>
         struct rotate_right
-            : public identity<tavl_node<
-                  tavl_node<typename T::left,
-                            typename T::right::left,
-                            (T::left::height > T::right::left::height ?
-                                 T::left::height + 1 :
-                                 T::right::left::height + 1),
-                            typename T::key,
-                            typename T::value>,
-                  typename T::right::right,
-                  (T::right::right::height >
-                           (T::left::height > T::right::left::height ?
-                                T::left::height + 1 :
-                                T::right::left::height + 1) ?
-                       T::right::right::height + 1 :
-                       (T::left::height > T::right::left::height ?
-                            T::left::height + 1 :
-                            T::right::left::height + 1) +
-                           1),
-                  typename T::right::key,
-                  typename T::right::value>>
         {
             static_assert(!std::is_same_v<T, empty_node>);
+            using type =
+                tavl_node<tavl_node<typename T::left,
+                                    typename T::right::left,
+                                    (T::left::height > T::right::left::height ?
+                                         T::left::height + 1 :
+                                         T::right::left::height + 1),
+                                    typename T::key,
+                                    typename T::value>,
+                          typename T::right::right,
+                          (T::right::right::height >
+                                   (T::left::height > T::right::left::height ?
+                                        T::left::height + 1 :
+                                        T::right::left::height + 1) ?
+                               T::right::right::height + 1 :
+                               (T::left::height > T::right::left::height ?
+                                    T::left::height + 1 :
+                                    T::right::left::height + 1) +
+                                   1),
+                          typename T::right::key,
+                          typename T::right::value>;
         };
         template <typename T>
         struct double_left
-            : public identity<typename rotate_left<
-                  tavl_node<typename rotate_right<typename T::left>::type,
-                            typename T::right,
-                            T::height,
-                            typename T::key,
-                            typename T::value>>::type>
         {
             static_assert(!std::is_same_v<T, empty_node>);
+            using type = typename rotate_left<
+                tavl_node<typename rotate_right<typename T::left>::type,
+                          typename T::right,
+                          T::height,
+                          typename T::key,
+                          typename T::value>>::type;
         };
         template <typename T>
         struct double_right
-            : public identity<typename rotate_right<
-                  tavl_node<typename T::left,
-                            typename rotate_left<typename T::right>::type,
-                            T::height,
-                            typename T::key,
-                            typename T::value>>::type>
         {
             static_assert(!std::is_same_v<T, empty_node>);
+            using type = typename rotate_right<
+                tavl_node<typename T::left,
+                          typename rotate_left<typename T::right>::type,
+                          T::height,
+                          typename T::key,
+                          typename T::value>>::type;
         };
     } // namespace Impl
 } // namespace tavl

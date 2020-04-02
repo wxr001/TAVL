@@ -711,6 +711,52 @@ namespace tavl
         } // namespace TestContain
         inline namespace TestInsert
         {
+            using a = tavl::tavl_node<
+                tavl::tavl_node<tavl::empty_node,
+                                tavl::empty_node,
+                                0,
+                                std::integral_constant<int, 2>,
+                                std::integral_constant<int, 2>>,
+                tavl::tavl_node<
+                    tavl::empty_node,
+                    tavl::tavl_node<
+                        tavl::empty_node,
+                        tavl::tavl_node<tavl::empty_node,
+                                        tavl::empty_node,
+                                        0,
+                                        std::integral_constant<int, 7>,
+                                        std::integral_constant<int, 7>>,
+                        1,
+                        std::integral_constant<int, 4>,
+                        std::integral_constant<int, 4>>,
+                    2,
+                    std::integral_constant<int, 3>,
+                    std::integral_constant<int, 3>>,
+                3,
+                std::integral_constant<int, 9>,
+                std::integral_constant<int, 9>>;
+            using b = tavl::tavl_node<
+                tavl::tavl_node<tavl::empty_node,
+                                tavl::empty_node,
+                                0,
+                                std::integral_constant<int, 2>,
+                                std::integral_constant<int, 2>>,
+                tavl::tavl_node<tavl::tavl_node<tavl::empty_node,
+                                                tavl::empty_node,
+                                                0,
+                                                std::integral_constant<int, 4>,
+                                                std::integral_constant<int, 4>>,
+                                tavl::tavl_node<tavl::empty_node,
+                                                tavl::empty_node,
+                                                0,
+                                                std::integral_constant<int, 9>,
+                                                std::integral_constant<int, 9>>,
+                                1,
+                                std::integral_constant<int, 7>,
+                                std::integral_constant<int, 7>>,
+                2,
+                std::integral_constant<int, 3>,
+                std::integral_constant<int, 3>>;
             static_assert(
                 std::is_same_v<tavl_insert_t<empty_node, int, int>,
                                tavl_node<empty_node, empty_node, 0, int, int>>,
