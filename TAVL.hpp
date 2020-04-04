@@ -984,11 +984,11 @@ namespace tavl
         template <
             typename L,
             typename R,
-            bool = std::is_same_v<
-                typename L::key,
-                typename tavl_find_t<R, typename L::key>::key>&&
-                std::is_same_v<typename L::value,
-                               typename tavl_find_t<R, typename L::key>::value>>
+            bool = tavl_is_same<typename L::key,
+                                typename tavl_find_t<R, typename L::key>::key>::
+                value&& tavl_is_same<
+                    typename L::value,
+                    typename tavl_find_t<R, typename L::key>::value>::value>
         struct comp_oneway;
         template <typename L, typename R>
         struct comp_oneway_nonempty
@@ -1275,6 +1275,70 @@ namespace tavl
     public:
         static constexpr int value = 0;
     };
+    namespace impl
+    {
+        template <typename T, typename K, typename V>
+        struct tavl_update_nonempty;
+        template <typename T,
+                  typename K,
+                  typename V,
+                  int = (compare_v<typename T::key, K> > 0 ?
+                             1 :
+                             compare_v<typename T::key, K> < 0 ? -1 : 0)>
+        struct tavl_update_impl;
+        template <typename T, typename K, typename V>
+        struct tavl_update_impl<T, K, V, 0>
+        {
+            using type = tavl_node<typename T::left,
+                                   typename T::right,
+                                   T::height,
+                                   typename T::key,
+                                   V>;
+        };
+        template <typename T, typename K, typename V>
+        struct tavl_update_impl<T, K, V, 1>
+        {
+            using type = tavl_node<
+                typename T::left,
+                typename tavl_update_nonempty<typename T::right, K, V>::type,
+                T::height,
+                typename T::key,
+                typename T::value>;
+        };
+        template <typename T, typename K, typename V>
+        struct tavl_update_impl<T, K, V, -1>
+        {
+            using type = tavl_node<
+                typename tavl_update_nonempty<typename T::left, K, V>::type,
+                typename T::right,
+                T::height,
+                typename T::key,
+                typename T::value>;
+        };
+        template <typename T, typename K, typename V>
+        struct tavl_update_nonempty
+        {
+            using type = typename tavl_update_impl<T, K, V>::type;
+        };
+        template <typename K, typename V>
+        struct tavl_update_nonempty<empty_node, K, V>
+        {
+            using type = empty_node;
+        };
+        template <typename T,
+                  typename K,
+                  typename V,
+                  bool = tavl_contain_v<T, K>>
+        struct tavl_update_exist
+        {
+            using type = typename tavl_update_nonempty<T, K, V>::type;
+        };
+        template <typename T, typename K, typename V>
+        struct tavl_update_exist<T, K, V, false>
+        {
+            using type = tavl_insert_t<T, K, V>;
+        };
+    } // namespace impl
     /**
      * @brief set the value of K to V (even if K is not existed)
      * @tparam T AVL tree
@@ -1284,7 +1348,12 @@ namespace tavl
     template <typename T, typename K, typename V>
     struct tavl_update
     {
-        using type = tavl_insert_t<tavl_remove_t<T, K>, K, V>;
+        using type = typename impl::tavl_update_exist<T, K, V>::type;
+    };
+    template <typename K, typename V>
+    struct tavl_update<empty_node, K, V>
+    {
+        using type = kv_pair<K, V>;
     };
     /**
      * @brief set the value of K to V (even if K is not existed)
