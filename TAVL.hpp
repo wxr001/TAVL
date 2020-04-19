@@ -1296,7 +1296,7 @@ namespace tavl
                                    V>;
         };
         template <typename T, typename K, typename V>
-        struct tavl_update_impl<T, K, V, 1>
+        struct tavl_update_impl<T, K, V, -1>
         {
             using type = tavl_node<
                 typename T::left,
@@ -1306,7 +1306,7 @@ namespace tavl
                 typename T::value>;
         };
         template <typename T, typename K, typename V>
-        struct tavl_update_impl<T, K, V, -1>
+        struct tavl_update_impl<T, K, V, 1>
         {
             using type = tavl_node<
                 typename tavl_update_nonempty<typename T::left, K, V>::type,
