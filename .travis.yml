@@ -127,6 +127,7 @@ jobs:
     - travis_wait sudo apt-get update -qq
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 1000
+    - eval export ${MATRIX_EVAL}
     - clang --version
   # Clang 7
   - os: linux
@@ -153,6 +154,7 @@ jobs:
     - travis_wait sudo apt-get update -qq
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-7 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-7 1000
+    - eval export ${MATRIX_EVAL}
     - clang --version
   # Clang 8
   - os: linux
@@ -180,6 +182,7 @@ jobs:
     - travis_wait sudo apt-get update -qq
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 1000
+    - eval export ${MATRIX_EVAL}
     - clang --version
   # Clang 9
   - os: linux
@@ -207,6 +210,7 @@ jobs:
     - travis_wait sudo apt-get update -qq
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 1000
+    - eval export ${MATRIX_EVAL}
     - clang --version
   # Clang 10
   - os: linux
@@ -233,6 +237,7 @@ jobs:
     - travis_wait sudo apt-get update -qq
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-10 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-10 1000
+    - eval export ${MATRIX_EVAL}
     - clang --version    
   # Clang 10-CXX20
   - os: linux
@@ -259,6 +264,7 @@ jobs:
     - travis_wait sudo apt-get update -qq
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-10 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-10 1000
+    - eval export ${MATRIX_EVAL}
     - clang --version  
   # XCode 10.0
   - os: osx
@@ -298,7 +304,7 @@ script:
 - mkdir Build && cd Build
 - |
     if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      eval ${MATRIX_EVAL} cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_STANDARD=$TAVL_CXX_STANDARD
+      cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_STANDARD=$TAVL_CXX_STANDARD
     else
       cmake .. -G "Xcode" -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_SHARED_LIBS=OFF
     fi
