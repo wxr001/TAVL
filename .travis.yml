@@ -119,7 +119,7 @@ jobs:
         - tree
     language: cpp
     env:
-    - MATRIX_EVAL="CC=clang-6.0  CXX=clang++-6.0"
+    - MATRIX_EVAL="CC=/usr/bin/clang CXX=/usr/bin/clang++"
     - COMPILER=clang++-6.0
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -128,7 +128,7 @@ jobs:
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-6.0 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-6.0 1000
     - eval export ${MATRIX_EVAL}
-    - clang --version
+    - $CXX --version
   # Clang 7
   - os: linux
     dist: xenial
@@ -146,7 +146,7 @@ jobs:
         - tree
     language: cpp
     env:
-    - MATRIX_EVAL="CC=clang-7  CXX=clang++-7"
+    - MATRIX_EVAL="CC=/usr/bin/clang CXX=/usr/bin/clang++"
     - COMPILER=clang++-7
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -155,7 +155,7 @@ jobs:
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-7 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-7 1000
     - eval export ${MATRIX_EVAL}
-    - clang --version
+    - $CXX --version
   # Clang 8
   - os: linux
     dist: xenial
@@ -174,7 +174,7 @@ jobs:
         - tree
     language: cpp
     env:
-    - MATRIX_EVAL="CC=clang-8  CXX=clang++-8"
+    - MATRIX_EVAL="CC=/usr/bin/clang CXX=/usr/bin/clang++"
     - COMPILER=clang++-8
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -183,7 +183,7 @@ jobs:
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-8 1000
     - eval export ${MATRIX_EVAL}
-    - clang --version
+    - $CXX --version
   # Clang 9
   - os: linux
     dist: xenial
@@ -202,7 +202,7 @@ jobs:
         - tree
     language: cpp
     env:
-    - MATRIX_EVAL="CC=clang-9  CXX=clang++-9"
+    - MATRIX_EVAL="CC=/usr/bin/clang CXX=/usr/bin/clang++"
     - COMPILER=clang++-9
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -211,7 +211,7 @@ jobs:
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-9 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-9 1000
     - eval export ${MATRIX_EVAL}
-    - clang --version
+    - $CXX --version
   # Clang 10
   - os: linux
     dist: xenial
@@ -229,7 +229,7 @@ jobs:
         - tree
     language: cpp
     env:
-    - MATRIX_EVAL="CC=clang-10  CXX=clang++-10"
+    - MATRIX_EVAL="CC=/usr/bin/clang CXX=/usr/bin/clang++"
     - COMPILER=clang++-10
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -238,7 +238,7 @@ jobs:
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-10 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-10 1000
     - eval export ${MATRIX_EVAL}
-    - clang --version    
+    - $CXX --version    
   # Clang 10-CXX20
   - os: linux
     dist: xenial
@@ -256,7 +256,7 @@ jobs:
         - tree
     language: cpp
     env:
-    - MATRIX_EVAL="CC=clang-10 CXX=clang++-10"
+    - MATRIX_EVAL="CC=/usr/bin/clang CXX=/usr/bin/clang++"
     - COMPILER=clang++-10
     - TAVL_CXX_STANDARD=20
     - BUILD_TYPE=Release
@@ -265,7 +265,7 @@ jobs:
     - sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-10 1000
     - sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-10 1000
     - eval export ${MATRIX_EVAL}
-    - clang --version  
+    - $CXX --version  
   # XCode 10.0
   - os: osx
     osx_image: xcode10
