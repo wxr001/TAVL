@@ -1594,7 +1594,7 @@ namespace tavl
      * @note value is meaningless here.
      */
     template <typename S1, typename S2>
-    REQUIRES(Node<T1>&& Node<T2>)
+    REQUIRES(Node<S1>&& Node<S2>)
     struct tavl_is_subset
     {
     private:
