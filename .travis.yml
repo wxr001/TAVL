@@ -105,7 +105,6 @@ jobs:
   # Clang 6.0
   - os: linux
     dist: xenial
-    sudo: required
     addons: &clang60
       apt:
         sources:
@@ -119,8 +118,8 @@ jobs:
         - ninja-build
         - tree
     language: cpp
-    compiler: clang
     env:
+    - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
     - COMPILER=clang++-6.0
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -132,7 +131,6 @@ jobs:
   # Clang 7
   - os: linux
     dist: xenial
-    sudo: required
     addons: &clang70
       apt:
         sources:
@@ -146,8 +144,8 @@ jobs:
         - ninja-build
         - tree
     language: cpp
-    compiler: clang
     env:
+    - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
     - COMPILER=clang++-7
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -173,8 +171,8 @@ jobs:
         - ninja-build
         - tree
     language: cpp
-    compiler: clang
     env:
+    - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
     - COMPILER=clang++-8
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -200,8 +198,8 @@ jobs:
         - ninja-build
         - tree
     language: cpp
-    compiler: clang
     env:
+    - MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
     - COMPILER=clang++-9
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -226,8 +224,8 @@ jobs:
         - ninja-build
         - tree
     language: cpp
-    compiler: clang
     env:
+    - MATRIX_EVAL="CC=clang-10 && CXX=clang++-10"
     - COMPILER=clang++-10
     - TAVL_CXX_STANDARD=17
     - BUILD_TYPE=Release
@@ -252,8 +250,8 @@ jobs:
         - ninja-build
         - tree
     language: cpp
-    compiler: clang
     env:
+    - MATRIX_EVAL="CC=clang-10 && CXX=clang++-10"
     - COMPILER=clang++-10
     - TAVL_CXX_STANDARD=20
     - BUILD_TYPE=Release
