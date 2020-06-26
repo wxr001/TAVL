@@ -128,8 +128,8 @@ namespace tavl
         using value                 = V;
     };
 
+#if __cplusplus > 201703L && __cpp_concepts >= 201907L
     // concepts for C++2a
-#if __cplusplus > 201703L
     template <typename L, typename R>
     concept Comparable = requires
     {
@@ -151,11 +151,13 @@ namespace tavl
 #define REQUIRES(e) requires e
 #define COMPARABLE_CHECK(L, R) Comparable<L, R>
 #define NODE_CHECK(T) Node<T>
+#define MULTI_NODES(Trees) (Node<Trees> && ...)
 #define VALID_NK(N, K) ValidNodeAndKey<N, K>
 #else
 #define REQUIRES(e)
 #define COMPARABLE_CHECK(L, R)
 #define NODE_CHECK(T)
+#define MULTI_NODES(Trees)
 #define VALID_NK(N, K)
 #endif
     namespace impl
@@ -201,7 +203,7 @@ namespace tavl
         using type = typename impl::find_impl<T, K>::type;
     };
     template <typename K>
-    REQUIRES(VALID_NK(T, K))
+    REQUIRES(VALID_NK(empty_node, K))
     struct tavl_find<empty_node, K>
     {
         using type = empty_node;
@@ -428,7 +430,7 @@ namespace tavl
             typename impl::insert_impl<T, K, V>::type>;
     };
     template <typename K, typename V>
-    REQUIRES(VALID_NK(T, K))
+    REQUIRES(VALID_NK(empty_node, K))
     struct tavl_insert<empty_node, K, V>
     {
         using type = tavl_node<empty_node, empty_node, 0, K, V>;
@@ -629,7 +631,7 @@ namespace tavl
             impl::remove_reset_height_t<typename impl::remove_impl<T, K>::type>;
     };
     template <typename K>
-    REQUIRES(VALID_NK(T, K))
+    REQUIRES(VALID_NK(empty_node, K))
     struct tavl_remove<empty_node, K>
     {
         using type = empty_node;
@@ -669,7 +671,7 @@ namespace tavl
               template <typename L, typename R, typename C>
               typename M = tavl_for_each_default_merge,
               typename D = void>
-    REQUIRES(NODE(T))
+    REQUIRES(NODE_CHECK(T))
     struct tavl_for_each
     {
     private:
@@ -710,7 +712,7 @@ namespace tavl
               template <typename L, typename R, typename C>
               typename M = tavl_for_each_default_merge,
               typename D = void>
-    REQUIRES(NODE(T))
+    REQUIRES(NODE_CHECK(T))
     using tavl_for_each_t = typename tavl_for_each<T, F, M, D>::type;
     /**
      * @brief default implementation of merging function for
@@ -819,7 +821,7 @@ namespace tavl
               template <typename B, typename C>
               typename M,
               typename Last>
-    REQUIRES(NODE(T))
+    REQUIRES(NODE_CHECK(T))
     struct tavl_for_each_middle_order
     {
     public:
@@ -848,7 +850,7 @@ namespace tavl
               template <typename B, typename C>
               typename M    = tavl_for_each_middle_order_default_merge,
               typename Init = void>
-    REQUIRES(NODE(T))
+    REQUIRES(NODE_CHECK(T))
     using tavl_for_each_middle_order_t =
         typename tavl_for_each_middle_order<T, F, M, Init>::type;
     /**
@@ -858,6 +860,7 @@ namespace tavl
      * @note Trees can be empty
      */
     template <typename T1, typename... Trees>
+    REQUIRES(Node<T1>&& MULTI_NODES(Trees))
     struct tavl_intersect
     {
     private:
@@ -886,6 +889,7 @@ namespace tavl
             tavl_for_each_middle_order_t<T1, for_each_node, merger, empty_node>;
     };
     template <typename... Trees>
+    REQUIRES(MULTI_NODES(Trees))
     struct tavl_intersect<empty_node, Trees...>
     {
         using type = empty_node;
@@ -928,6 +932,7 @@ namespace tavl
      * actions for conflicts between different trees
      */
     template <typename Tree, typename Tree2, typename... Others>
+    REQUIRES(Node<Tree>&& Node<Tree2>&& MULTI_NODES(Others))
     struct tavl_union
     {
     private:
@@ -941,6 +946,7 @@ namespace tavl
         using type = typename tavl_union<union_result, Others...>::type;
     };
     template <typename Tree, typename Tree2>
+    REQUIRES(Node<Tree>&& Node<Tree2>)
     struct tavl_union<Tree, Tree2>
     {
         using type = tavl::tavl_for_each_middle_order_t<
@@ -1024,6 +1030,7 @@ namespace tavl
               int H2,
               typename K2,
               typename V2>
+    REQUIRES(Node<L1>&& Node<R1>&& Node<L2>&& Node<R2>)
     struct tavl_is_same<tavl_node<L1, R1, H1, K1, V1>,
                         tavl_node<L2, R2, H2, K2, V2>>
     {
@@ -1245,6 +1252,7 @@ namespace tavl
               int H2,
               typename K2,
               typename V2>
+    REQUIRES(Node<L1>&& Node<R1>&& Node<L2>&& Node<R2>)
     struct compare<tavl_node<L1, R1, H1, K1, V1>, tavl_node<L2, R2, H2, K2, V2>>
     {
     private:
@@ -1255,6 +1263,7 @@ namespace tavl
                                       impl::end_of_tree_flag>>::value;
     };
     template <typename L1, typename R1, int H1, typename K1, typename V1>
+    REQUIRES(Node<L1>&& Node<R1>)
     struct compare<tavl_node<L1, R1, H1, K1, V1>, empty_node>
     {
     private:
@@ -1262,6 +1271,7 @@ namespace tavl
         static constexpr int value = 1;
     };
     template <typename L1, typename R1, int H1, typename K1, typename V1>
+    REQUIRES(Node<L1>&& Node<R1>)
     struct compare<empty_node, tavl_node<L1, R1, H1, K1, V1>>
     {
     private:
@@ -1346,6 +1356,7 @@ namespace tavl
      * @tparam V value to be set to
      */
     template <typename T, typename K, typename V>
+    REQUIRES(Node<T>)
     struct tavl_update
     {
         using type = typename impl::tavl_update_exist<T, K, V>::type;
@@ -1380,6 +1391,7 @@ namespace tavl
               typename Tree,
               typename Tree2,
               typename... Others>
+    REQUIRES(Node<Tree>&& Node<Tree2>&& MULTI_NODES(Others))
     struct tavl_union_with_func
     {
     private:
@@ -1472,6 +1484,7 @@ namespace tavl
     template <template <typename Key, typename... Values> typename Func,
               typename T1,
               typename... Trees>
+    REQUIRES(Node<T1>&& MULTI_NODES(Trees))
     struct tavl_intersect_with_func
     {
     private:
@@ -1514,6 +1527,7 @@ namespace tavl
     };
     template <template <typename Key, typename... Values> typename Func,
               typename... Trees>
+    REQUIRES(MULTI_NODES(Trees))
     struct tavl_intersect_with_func<Func, empty_node, Trees...>
     {
         using type = empty_node;
@@ -1530,6 +1544,7 @@ namespace tavl
     using tavl_intersect_with_func_t =
         typename tavl_intersect_with_func<Func, Tree, Trees...>::type;
     template <typename T1, typename T2>
+    REQUIRES(Node<T1>&& Node<T2>)
     struct tavl_difference
     {
     private:
@@ -1551,6 +1566,7 @@ namespace tavl
               typename Func,
               typename T1,
               typename T2>
+    REQUIRES(Node<T1>&& Node<T2>)
     struct tavl_difference_with_func
     {
     private:
@@ -1578,6 +1594,7 @@ namespace tavl
      * @note value is meaningless here.
      */
     template <typename S1, typename S2>
+    REQUIRES(Node<T1>&& Node<T2>)
     struct tavl_is_subset
     {
     private:
