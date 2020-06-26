@@ -133,7 +133,7 @@ namespace tavl
     template <typename L, typename R>
     concept Comparable = requires
     {
-        compare_v<L, R>;
+        compare<L, R>::value + 0;
     };
     template <typename T>
     concept Node = requires
@@ -146,8 +146,8 @@ namespace tavl
     };
     template <typename T, typename K>
     concept ValidNodeAndKey = Node<T> &&
-                              +(Comparable<typename T::key, typename T::key> ||
-                                +is_empty_node_v<T>);
+                              (Comparable<typename T::key, typename T::key> ||
+                               is_empty_node_v<T>);
 #define REQUIRES(e) requires e
 #define COMPARABLE_CHECK(L, R) Comparable<L, R>
 #define NODE_CHECK(T) Node<T>
