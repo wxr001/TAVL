@@ -907,6 +907,13 @@ namespace tavl
                 !tavl_is_same_v<test_is_same_normal, test_is_same_more> &&
                     !tavl_is_same_v<test_is_same_more, test_is_same_normal>,
                 "test for trees one is the other's subset");
+            static_assert(
+                !tavl_is_same_v<
+                    kv_pair<int_v<0>,
+                            kv_pair<int_v<0>, kv_pair<int_v<0>, int_v<0>>>>,
+                    kv_pair<int_v<0>,
+                            kv_pair<int_v<0>, kv_pair<int_v<0>, int_v<1>>>>>,
+                "test for tavl as value");
         } // namespace TestIsSame
         inline namespace TestCompareTAVL
         {

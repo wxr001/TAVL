@@ -1085,14 +1085,22 @@ namespace tavl
                                                            Ts...>>::type;
             using next = typename std::conditional_t<
                 is_empty_node_v<typename T::left>,
+                std::conditional_t<is_empty_node_v<typename T::right>,
+                                   identity_helper<another_tavl_helper, Ts...>,
+                                   identity_helper<another_tavl_helper,
+                                                   typename T::right,
+                                                   Ts...>>,
                 std::conditional_t<
                     is_empty_node_v<typename T::right>,
-                    identity_helper<another_tavl_helper_cur, Ts...>,
-                    identity_helper<another_tavl_helper,
-                                    typename T::right,
-                                    Ts...>>,
-                next_helper<another_tavl_helper, typename T::left, T, Ts...>>::
-                type;
+                    next_helper<another_tavl_helper,
+                                typename T::left,
+                                kv_pair<typename T::key, typename T::value>,
+                                Ts...>,
+                    next_helper<another_tavl_helper,
+                                typename T::left,
+                                kv_pair<typename T::key, typename T::value>,
+                                typename T::right,
+                                Ts...>>>::type;
             static constexpr bool value = false;
         };
         template <>
@@ -1123,6 +1131,27 @@ namespace tavl
         };
         template <>
         struct is_same_kv_impl<empty_node, end_of_tree_flag> : std::true_type
+        {
+        };
+        template <typename T>
+        struct is_same_kv_impl<end_of_tree_flag, T> : std::false_type
+        {
+        };
+        template <typename T>
+        struct is_same_kv_impl<T, empty_node> : std::false_type
+        {
+        };
+        template <>
+        struct is_same_kv_impl<end_of_tree_flag, empty_node> : std::true_type
+        {
+        };
+        template <>
+        struct is_same_kv_impl<empty_node, empty_node> : std::true_type
+        {
+        };
+        template <>
+        struct is_same_kv_impl<end_of_tree_flag, end_of_tree_flag>
+            : std::true_type
         {
         };
         template <typename T1, typename T2>
@@ -1336,7 +1365,9 @@ namespace tavl
         {
             static constexpr bool value =
                 is_same_kv<typename A1::current, typename A2::current> &&
-                is_same_impl_v2<typename A1::next, typename A2::next>::value;
+                lazy_template<is_same_impl_v2,
+                              typename A1::next,
+                              typename A2::next>::type::value;
         };
         template <typename A>
         struct is_same_impl_v2<A, A>
