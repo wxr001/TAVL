@@ -1375,6 +1375,18 @@ namespace tavl
         {
             static constexpr bool value = true;
         };
+        template <>
+        struct is_same_impl_v2<another_tavl_helper_cur<end_of_tree_flag>,
+                               another_tavl_helper_cur<end_of_tree_flag>>
+        {
+            static constexpr bool value = true;
+        };
+        template <>
+        struct is_same_impl_v2<another_tavl_helper<end_of_tree_flag>,
+                               another_tavl_helper<end_of_tree_flag>>
+        {
+            static constexpr bool value = true;
+        };
     } // namespace impl
     // @brief specialization for TAVLs
     template <Node    L1,
