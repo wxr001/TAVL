@@ -136,18 +136,19 @@ namespace tavl
         compare<L, R>::value + 0;
     };
     template <typename T>
+    concept KeyType = Comparable<T, T>;
+    template <typename T>
     concept Node = requires
     {
         typename T::left;
         typename T::right;
         T::height + 0;
         typename T::key;
+        (is_empty_node_v<T> || Comparable<typename T::key, typename T::key>);
         typename T::value;
     };
     template <typename T, typename K>
-    concept ValidNodeAndKey = Node<T> &&
-                              (Comparable<typename T::key, typename T::key> ||
-                               is_empty_node_v<T>);
+    concept ValidNodeAndKey = Node<T>&& Comparable<K, K>;
 #define REQUIRES(e) requires e
 #define COMPARABLE_CHECK(L, R) Comparable<L, R>
 #define NODE_CHECK(T) Node<T>
@@ -159,6 +160,8 @@ namespace tavl
 #define NODE_CHECK(T)
 #define MULTI_NODES(Trees)
 #define VALID_NK(N, K)
+#define KeyType typename
+#define Node typename
 #endif
     namespace impl
     {
@@ -196,14 +199,12 @@ namespace tavl
      * @tparam T AVL tree
      * @tparam K key type
      */
-    template <typename T, typename K>
-    REQUIRES(VALID_NK(T, K))
+    template <Node T, KeyType K>
     struct tavl_find
     {
         using type = typename impl::find_impl<T, K>::type;
     };
-    template <typename K>
-    REQUIRES(VALID_NK(empty_node, K))
+    template <KeyType K>
     struct tavl_find<empty_node, K>
     {
         using type = empty_node;
@@ -214,13 +215,11 @@ namespace tavl
      * @tparam T AVL tree
      * @tparam K key type
      */
-    template <typename T, typename K>
-    REQUIRES(VALID_NK(T, K))
+    template <Node T, KeyType K>
     using tavl_find_t = typename tavl_find<T, K>::type;
     // check whether there is an element whose key is K in the given AVL
     // tree T
-    template <typename T, typename K>
-    REQUIRES(VALID_NK(T, K))
+    template <Node T, KeyType K>
     inline constexpr bool tavl_contain_v =
         !std::is_same_v<tavl_find_t<T, K>, empty_node>;
     namespace impl
@@ -261,32 +260,28 @@ namespace tavl
      * if there is no such element.
      * @tparam T AVL tree
      */
-    template <typename T>
-    REQUIRES(NODE_CHECK(T))
+    template <Node T>
     using tavl_min = impl::min_impl<T>;
     /**
      * @brief get the minimal element in the given AVL tree, or empty_node
      * if there is no such element.
      * @tparam T AVL tree
      */
-    template <typename T>
-    REQUIRES(NODE_CHECK(T))
+    template <Node T>
     using tavl_min_t = typename tavl_min<T>::type;
     /**
      * @brief get the maximal element in the given AVL tree, or empty_node
      * if there is no such element.
      * @tparam T AVL tree
      */
-    template <typename T>
-    REQUIRES(NODE_CHECK(T))
+    template <Node T>
     using tavl_max = impl::max_impl<T>;
     /**
      * @brief get the maximal element in the given AVL tree, or empty_node
      * if there is no such element.
      * @tparam T AVL tree
      */
-    template <typename T>
-    REQUIRES(NODE_CHECK(T))
+    template <Node T>
     using tavl_max_t = typename tavl_max<T>::type;
     namespace impl
     {
@@ -421,16 +416,14 @@ namespace tavl
     /**
      * @brief insert an (K, V) element into given AVL tree T
      */
-    template <typename T, typename K, typename V = std::true_type>
-    REQUIRES(VALID_NK(T, K))
+    template <Node T, KeyType K, typename V = std::true_type>
     struct tavl_insert
     {
     public:
         using type = impl::insert_reset_height<
             typename impl::insert_impl<T, K, V>::type>;
     };
-    template <typename K, typename V>
-    REQUIRES(VALID_NK(empty_node, K))
+    template <KeyType K, typename V>
     struct tavl_insert<empty_node, K, V>
     {
         using type = tavl_node<empty_node, empty_node, 0, K, V>;
@@ -439,7 +432,6 @@ namespace tavl
      * @brief insert an (K, V) element into given AVL tree T
      */
     template <typename T, typename K, typename V = std::true_type>
-    REQUIRES(VALID_NK(T, K))
     using tavl_insert_t = typename tavl_insert<T, K, V>::type;
     namespace impl
     {
@@ -622,16 +614,14 @@ namespace tavl
     /**
      * @brief try to remopve the element whose key is K
      */
-    template <typename T, typename K>
-    REQUIRES(VALID_NK(T, K))
+    template <Node T, KeyType K>
     struct tavl_remove
     {
     public:
         using type =
             impl::remove_reset_height_t<typename impl::remove_impl<T, K>::type>;
     };
-    template <typename K>
-    REQUIRES(VALID_NK(empty_node, K))
+    template <KeyType K>
     struct tavl_remove<empty_node, K>
     {
         using type = empty_node;
@@ -640,7 +630,6 @@ namespace tavl
      * @brief try to remopve the element whose key is K
      */
     template <typename T, typename K>
-    REQUIRES(VALID_NK(T, K))
     using tavl_remove_t = typename tavl_remove<T, K>::type;
     /**
      * @brief default implementation of merging function for tavl_for_each
@@ -665,13 +654,12 @@ namespace tavl
      * version is meaningless. Therefore you can use some undefined member
      * types to 'stop' for_each and show error messages.
      */
-    template <typename T,
+    template <Node T,
               template <typename K, typename V>
               typename F,
-              template <typename L, typename R, typename C>
-              typename M = tavl_for_each_default_merge,
+              template <typename L, typename R, typename C> typename M =
+                  tavl_for_each_default_merge,
               typename D = void>
-    REQUIRES(NODE_CHECK(T))
     struct tavl_for_each
     {
     private:
@@ -709,10 +697,9 @@ namespace tavl
     template <typename T,
               template <typename K, typename V>
               typename F,
-              template <typename L, typename R, typename C>
-              typename M = tavl_for_each_default_merge,
+              template <typename L, typename R, typename C> typename M =
+                  tavl_for_each_default_merge,
               typename D = void>
-    REQUIRES(NODE_CHECK(T))
     using tavl_for_each_t = typename tavl_for_each<T, F, M, D>::type;
     /**
      * @brief default implementation of merging function for
@@ -727,7 +714,7 @@ namespace tavl
      * @brief key-value pair that can be used by
      * tavl_for_each_middle_order_tree_merger
      */
-    template <typename K, typename V = std::true_type>
+    template <KeyType K, typename V = std::true_type>
     using kv_pair = tavl_node<empty_node, empty_node, 0, K, V>;
     /**
      * @brief Another implementation of merging function for
@@ -752,42 +739,63 @@ namespace tavl
                   template <typename B, typename C>
                   typename M,
                   typename L>
-        struct for_each_mid_impl;
-        template <typename T,
-                  template <typename K, typename V>
-                  typename F,
-                  template <typename B, typename C>
-                  typename M,
-                  typename L>
-        struct for_each_mid_recursive
-        {
-            using type = typename for_each_mid_impl<T, F, M, L>::type;
-        };
-        template <template <typename K, typename V> typename F,
-                  template <typename B, typename C>
-                  typename M,
-                  typename L>
-        struct for_each_mid_recursive<empty_node, F, M, L>
-        {
-            using type = L;
-        };
-        template <typename T,
-                  template <typename K, typename V>
-                  typename F,
-                  template <typename B, typename C>
-                  typename M,
-                  typename L>
         struct for_each_mid_impl
         {
-            using type = typename for_each_mid_recursive<
+            using type = typename for_each_mid_impl<
                 typename T::right,
                 F,
                 M,
                 typename M<
-                    typename for_each_mid_recursive<typename T::left, F, M, L>::
-                        type,
+                    typename for_each_mid_impl<typename T::left, F, M, L>::type,
                     typename F<typename T::key,
                                typename T::value>::type>::type>::type;
+        };
+        template <typename Left,
+                  int H,
+                  typename K,
+                  typename V,
+                  template <typename, typename>
+                  typename F,
+                  template <typename B, typename C>
+                  typename M,
+                  typename L>
+        struct for_each_mid_impl<tavl_node<Left, empty_node, H, K, V>, F, M, L>
+        {
+            using type =
+                typename M<typename for_each_mid_impl<Left, F, M, L>::type,
+                           typename F<K, V>::type>::type;
+        };
+        template <typename Right,
+                  int H,
+                  typename K,
+                  typename V,
+                  template <typename, typename>
+                  typename F,
+                  template <typename B, typename C>
+                  typename M,
+                  typename L>
+        struct for_each_mid_impl<tavl_node<empty_node, Right, H, K, V>, F, M, L>
+        {
+            using type = typename for_each_mid_impl<
+                Right,
+                F,
+                M,
+                typename M<L, typename F<K, V>::type>::type>::type;
+        };
+        template <int H,
+                  typename K,
+                  typename V,
+                  template <typename, typename>
+                  typename F,
+                  template <typename B, typename C>
+                  typename M,
+                  typename L>
+        struct for_each_mid_impl<tavl_node<empty_node, empty_node, H, K, V>,
+                                 F,
+                                 M,
+                                 L>
+        {
+            using type = typename M<L, typename F<K, V>::type>::type;
         };
         template <template <typename K, typename V> typename F,
                   template <typename B, typename C>
@@ -815,13 +823,12 @@ namespace tavl
      * version is meaningless. Therefore you can use some undefined member
      * types to 'stop' for_each and show error messages.
      */
-    template <typename T,
+    template <Node T,
               template <typename K, typename V>
               typename F,
               template <typename B, typename C>
               typename M,
               typename Last>
-    REQUIRES(NODE_CHECK(T))
     struct tavl_for_each_middle_order
     {
     public:
@@ -847,10 +854,9 @@ namespace tavl
     template <typename T,
               template <typename K, typename V>
               typename F,
-              template <typename B, typename C>
-              typename M    = tavl_for_each_middle_order_default_merge,
+              template <typename B, typename C> typename M =
+                  tavl_for_each_middle_order_default_merge,
               typename Init = void>
-    REQUIRES(NODE_CHECK(T))
     using tavl_for_each_middle_order_t =
         typename tavl_for_each_middle_order<T, F, M, Init>::type;
     /**
@@ -859,8 +865,7 @@ namespace tavl
      * @tparam Trees other trees
      * @note Trees can be empty
      */
-    template <typename T1, typename... Trees>
-    REQUIRES(Node<T1>&& MULTI_NODES(Trees))
+    template <Node T1, Node... Trees>
     struct tavl_intersect
     {
     private:
@@ -888,8 +893,7 @@ namespace tavl
         using type =
             tavl_for_each_middle_order_t<T1, for_each_node, merger, empty_node>;
     };
-    template <typename... Trees>
-    REQUIRES(MULTI_NODES(Trees))
+    template <Node... Trees>
     struct tavl_intersect<empty_node, Trees...>
     {
         using type = empty_node;
@@ -931,8 +935,7 @@ namespace tavl
      * tavl_union_with_func is another version that supports user defined
      * actions for conflicts between different trees
      */
-    template <typename Tree, typename Tree2, typename... Others>
-    REQUIRES(Node<Tree>&& Node<Tree2>&& MULTI_NODES(Others))
+    template <Node Tree, Node Tree2, Node... Others>
     struct tavl_union
     {
     private:
@@ -945,8 +948,7 @@ namespace tavl
     public:
         using type = typename tavl_union<union_result, Others...>::type;
     };
-    template <typename Tree, typename Tree2>
-    REQUIRES(Node<Tree>&& Node<Tree2>)
+    template <Node Tree, Node Tree2>
     struct tavl_union<Tree, Tree2>
     {
         using type = tavl::tavl_for_each_middle_order_t<
@@ -1020,34 +1022,6 @@ namespace tavl
         };
 
     } // namespace impl
-    template <typename L1,
-              typename R1,
-              int H1,
-              typename K1,
-              typename V1,
-              typename L2,
-              typename R2,
-              int H2,
-              typename K2,
-              typename V2>
-    REQUIRES(Node<L1>&& Node<R1>&& Node<L2>&& Node<R2>)
-    struct tavl_is_same<tavl_node<L1, R1, H1, K1, V1>,
-                        tavl_node<L2, R2, H2, K2, V2>>
-    {
-    private:
-        using lhs = tavl_node<L1, R1, H1, K1, V1>;
-        using rhs = tavl_node<L2, R2, H2, K2, V2>;
-        template <typename L, typename R>
-        static std::bool_constant<(impl::comp_oneway<lhs, rhs>::value) &&
-                                  (impl::comp_oneway<rhs, lhs>::value)>
-            test(L*);
-        template <typename L, typename R>
-        static std::false_type test(...);
-
-    public:
-        static constexpr bool value =
-            decltype(test<lhs, rhs>(static_cast<lhs*>(nullptr)))::value;
-    };
     template <typename L, typename R>
     inline constexpr bool tavl_is_same_v = tavl_is_same<L, R>::value;
     // implementations for comparing between two TAVLs lexicographically
@@ -1128,6 +1102,123 @@ namespace tavl
             using next                  = end_of_tree_flag;
             static constexpr bool value = true;
         };
+        struct next_wrapper
+        {
+            using next = another_tavl_helper<end_of_tree_flag>;
+        };
+        template <typename T1, typename T2>
+        struct is_same_kv_impl
+        {
+            static constexpr bool value =
+                tavl_is_same_v<typename T1::key, typename T2::key> &&
+                tavl_is_same_v<typename T1::value, typename T2::value>;
+        };
+        template <typename T>
+        struct is_same_kv_impl<T, end_of_tree_flag> : std::false_type
+        {
+        };
+        template <typename T>
+        struct is_same_kv_impl<empty_node, T> : std::false_type
+        {
+        };
+        template <>
+        struct is_same_kv_impl<empty_node, end_of_tree_flag> : std::true_type
+        {
+        };
+        template <typename T1, typename T2>
+        inline constexpr bool is_same_kv = is_same_kv_impl<T1, T2>::value;
+        template <typename T1, typename T2>
+        using is_same_kv_t = is_same_kv_impl<T1, T2>;
+        template <typename T, typename A>
+        struct is_same_impl
+        {
+            template <typename LEFT>
+            struct compare_full
+                : std::conditional_t<
+                      is_same_impl<LEFT, A>::value,
+                      std::conditional_t<
+                          is_same_kv<
+                              T,
+                              typename is_same_impl<LEFT, A>::next::current>,
+                          std::conditional_t<
+                              is_empty_node_v<typename T::right>,
+                              identity<std::true_type>,
+                              lazy_template<
+                                  is_same_impl,
+                                  typename T::right,
+                                  typename is_same_impl<LEFT, A>::next::next>>,
+                          lazy_template<
+                              is_same_kv_t,
+                              T,
+                              typename is_same_impl<LEFT, A>::next::current>>,
+                      lazy_template<is_same_impl, LEFT, A>>::type
+            {
+                using next = typename std::conditional_t<
+                    compare_full::value,
+                    std::conditional_t<
+                        is_empty_node_v<typename T::right>,
+                        identity<typename is_same_impl<LEFT, A>::next>,
+                        lazy_template<
+                            is_same_impl,
+                            typename T::right,
+                            typename is_same_impl<LEFT, A>::next::next>>,
+                    identity<next_wrapper>>::type::next;
+            };
+            static constexpr bool value = std::conditional_t<
+                is_empty_node_v<typename T::left>,
+                std::conditional_t<
+                    is_same_kv<T, typename A::current>,
+                    std::conditional_t<is_empty_node_v<typename T::right>,
+                                       std::true_type,
+                                       lazy_template<is_same_impl,
+                                                     typename T::right,
+                                                     typename A::next>>,
+                    lazy_template<is_same_kv_t, T, typename A::current>>,
+                lazy_template<compare_full, typename T::left>>::type::value;
+            using next = typename std::conditional_t<
+                is_empty_node_v<typename T::left>,
+                std::conditional_t<
+                    is_same_kv<T, typename A::current>,
+                    std::conditional_t<is_empty_node_v<typename T::right>,
+                                       identity<A>,
+                                       lazy_template<is_same_impl,
+                                                     typename T::right,
+                                                     typename A::next>>,
+                    identity<next_wrapper>>,
+                lazy_template<compare_full, typename T::left>>::type::next;
+        };
+        template <typename T>
+        struct is_same_impl<T, another_tavl_helper<end_of_tree_flag>>
+        {
+            static constexpr bool value = false;
+            using next                  = another_tavl_helper<end_of_tree_flag>;
+        };
+        template <typename T>
+        struct is_same_impl<T, another_tavl_helper_cur<end_of_tree_flag>>
+        {
+            static constexpr bool value = false;
+            using next = another_tavl_helper_cur<end_of_tree_flag>;
+        };
+        template <typename A>
+        struct is_same_impl<empty_node, A>
+        {
+            static constexpr bool value = false;
+            using next                  = A;
+        };
+        template <>
+        struct is_same_impl<empty_node, another_tavl_helper<end_of_tree_flag>>
+        {
+            static constexpr bool value = true;
+            using next                  = another_tavl_helper<end_of_tree_flag>;
+        };
+        template <>
+        struct is_same_impl<empty_node,
+                            another_tavl_helper_cur<end_of_tree_flag>>
+        {
+            static constexpr bool value = true;
+            using next = another_tavl_helper_cur<end_of_tree_flag>;
+        };
+
         template <typename T1, typename T2>
         struct comp_kv_impl
             : std::conditional_t<
@@ -1154,10 +1245,7 @@ namespace tavl
         inline constexpr int comp_kv = comp_kv_impl<T1, T2>::value;
         template <typename T1, typename T2>
         using comp_kv_t = comp_kv_impl<T1, T2>;
-        struct next_wrapper
-        {
-            using next = another_tavl_helper<end_of_tree_flag>;
-        };
+
         template <typename T, typename A>
         struct compare_impl
         {
@@ -1241,18 +1329,106 @@ namespace tavl
             using next = another_tavl_helper_cur<end_of_tree_flag>;
         };
     } // namespace impl
+    namespace impl
+    {
+        template <typename A1, typename A2>
+        struct is_same_impl_v2
+        {
+            static constexpr bool value =
+                is_same_kv<typename A1::current, typename A2::current> &&
+                is_same_impl_v2<typename A1::next, typename A2::next>::value;
+        };
+        template <typename A>
+        struct is_same_impl_v2<A, A>
+        {
+            static constexpr bool value = true;
+        };
+        template <typename A>
+        struct is_same_impl_v2<A, another_tavl_helper<end_of_tree_flag>>
+        {
+            static constexpr bool value = false;
+        };
+        template <typename A>
+        struct is_same_impl_v2<A, another_tavl_helper_cur<end_of_tree_flag>>
+        {
+            static constexpr bool value = false;
+        };
+        template <typename A>
+        struct is_same_impl_v2<another_tavl_helper<end_of_tree_flag>, A>
+        {
+            static constexpr bool value = false;
+        };
+        template <typename A>
+        struct is_same_impl_v2<another_tavl_helper_cur<end_of_tree_flag>, A>
+        {
+            static constexpr bool value = false;
+        };
+        template <>
+        struct is_same_impl_v2<another_tavl_helper<end_of_tree_flag>,
+                               another_tavl_helper_cur<end_of_tree_flag>>
+        {
+            static constexpr bool value = true;
+        };
+        template <>
+        struct is_same_impl_v2<another_tavl_helper_cur<end_of_tree_flag>,
+                               another_tavl_helper<end_of_tree_flag>>
+        {
+            static constexpr bool value = true;
+        };
+    } // namespace impl
     // @brief specialization for TAVLs
-    template <typename L1,
-              typename R1,
-              int H1,
-              typename K1,
+    template <Node    L1,
+              Node    R1,
+              int     H1,
+              KeyType K1,
               typename V1,
-              typename L2,
-              typename R2,
-              int H2,
-              typename K2,
+              Node    L2,
+              Node    R2,
+              int     H2,
+              KeyType K2,
               typename V2>
-    REQUIRES(Node<L1>&& Node<R1>&& Node<L2>&& Node<R2>)
+    struct tavl_is_same<tavl_node<L1, R1, H1, K1, V1>,
+                        tavl_node<L2, R2, H2, K2, V2>>
+    {
+    private:
+    public:
+        static constexpr bool value = impl::is_same_impl_v2<
+            impl::another_tavl_helper<tavl_node<L1, R1, H1, K1, V1>,
+                                      impl::end_of_tree_flag>,
+            impl::another_tavl_helper<tavl_node<L2, R2, H2, K2, V2>,
+                                      impl::end_of_tree_flag>>::value;
+    };
+    template <Node L1, Node R1, int H1, KeyType K1, typename V1>
+    struct tavl_is_same<tavl_node<L1, R1, H1, K1, V1>, empty_node>
+    {
+    private:
+    public:
+        static constexpr bool value = false;
+    };
+    template <Node L1, Node R1, int H1, KeyType K1, typename V1>
+    struct tavl_is_same<empty_node, tavl_node<L1, R1, H1, K1, V1>>
+    {
+    private:
+    public:
+        static constexpr bool value = false;
+    };
+    template <>
+    struct tavl_is_same<empty_node, empty_node>
+    {
+    private:
+    public:
+        static constexpr bool value = true;
+    };
+    template <Node    L1,
+              Node    R1,
+              int     H1,
+              KeyType K1,
+              typename V1,
+              Node    L2,
+              Node    R2,
+              int     H2,
+              KeyType K2,
+              typename V2>
     struct compare<tavl_node<L1, R1, H1, K1, V1>, tavl_node<L2, R2, H2, K2, V2>>
     {
     private:
@@ -1262,16 +1438,14 @@ namespace tavl
             impl::another_tavl_helper<tavl_node<L2, R2, H2, K2, V2>,
                                       impl::end_of_tree_flag>>::value;
     };
-    template <typename L1, typename R1, int H1, typename K1, typename V1>
-    REQUIRES(Node<L1>&& Node<R1>)
+    template <Node L1, Node R1, int H1, KeyType K1, typename V1>
     struct compare<tavl_node<L1, R1, H1, K1, V1>, empty_node>
     {
     private:
     public:
         static constexpr int value = 1;
     };
-    template <typename L1, typename R1, int H1, typename K1, typename V1>
-    REQUIRES(Node<L1>&& Node<R1>)
+    template <Node L1, Node R1, int H1, KeyType K1, typename V1>
     struct compare<empty_node, tavl_node<L1, R1, H1, K1, V1>>
     {
     private:
@@ -1355,13 +1529,12 @@ namespace tavl
      * @tparam K key to be updated
      * @tparam V value to be set to
      */
-    template <typename T, typename K, typename V>
-    REQUIRES(Node<T>)
+    template <Node T, KeyType K, typename V>
     struct tavl_update
     {
         using type = typename impl::tavl_update_exist<T, K, V>::type;
     };
-    template <typename K, typename V>
+    template <KeyType K, typename V>
     struct tavl_update<empty_node, K, V>
     {
         using type = kv_pair<K, V>;
@@ -1388,10 +1561,9 @@ namespace tavl
      * first value as its result
      */
     template <template <typename, typename> typename Func,
-              typename Tree,
-              typename Tree2,
-              typename... Others>
-    REQUIRES(Node<Tree>&& Node<Tree2>&& MULTI_NODES(Others))
+              Node Tree,
+              Node Tree2,
+              Node... Others>
     struct tavl_union_with_func
     {
     private:
@@ -1482,9 +1654,8 @@ namespace tavl
      * @note Trees can be empty
      */
     template <template <typename Key, typename... Values> typename Func,
-              typename T1,
-              typename... Trees>
-    REQUIRES(Node<T1>&& MULTI_NODES(Trees))
+              Node T1,
+              Node... Trees>
     struct tavl_intersect_with_func
     {
     private:
@@ -1526,8 +1697,7 @@ namespace tavl
             tavl_for_each_middle_order_t<T1, for_each_node, merger, empty_node>;
     };
     template <template <typename Key, typename... Values> typename Func,
-              typename... Trees>
-    REQUIRES(MULTI_NODES(Trees))
+              Node... Trees>
     struct tavl_intersect_with_func<Func, empty_node, Trees...>
     {
         using type = empty_node;
@@ -1543,8 +1713,7 @@ namespace tavl
               typename... Trees>
     using tavl_intersect_with_func_t =
         typename tavl_intersect_with_func<Func, Tree, Trees...>::type;
-    template <typename T1, typename T2>
-    REQUIRES(Node<T1>&& Node<T2>)
+    template <Node T1, Node T2>
     struct tavl_difference
     {
     private:
@@ -1564,9 +1733,8 @@ namespace tavl
     using tavl_difference_t = typename tavl_difference<T1, T2>::type;
     template <template <typename key, typename Val1, typename Val2>
               typename Func,
-              typename T1,
-              typename T2>
-    REQUIRES(Node<T1>&& Node<T2>)
+              Node T1,
+              Node T2>
     struct tavl_difference_with_func
     {
     private:
@@ -1593,8 +1761,7 @@ namespace tavl
      * @brief check whether S1 is a subset of S2
      * @note value is meaningless here.
      */
-    template <typename S1, typename S2>
-    REQUIRES(Node<S1>&& Node<S2>)
+    template <Node S1, Node S2>
     struct tavl_is_subset
     {
     private:

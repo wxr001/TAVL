@@ -659,7 +659,7 @@ namespace tavl
         inline namespace TestFind
         {
             static_assert(
-                std::is_same_v<tavl_find_t<empty_node, int>, empty_node>,
+                std::is_same_v<tavl_find_t<empty_node, int_v<0>>, empty_node>,
                 "tavl_find for empty tree");
             static_assert(
                 std::is_same_v<tavl_find_t<test_find_input, int_v<5>>::key,
@@ -692,7 +692,7 @@ namespace tavl
         } // namespace TestFind
         inline namespace TestContain
         {
-            static_assert(!tavl_contain_v<empty_node, int>,
+            static_assert(!tavl_contain_v<empty_node, int_v<0>>,
                           "tavl_contain for empty tree");
             static_assert(tavl_contain_v<test_contain_input, int_v<5>>,
                           "tavl_contain for root");
@@ -758,8 +758,9 @@ namespace tavl
                 std::integral_constant<int, 3>,
                 std::integral_constant<int, 3>>;
             static_assert(
-                std::is_same_v<tavl_insert_t<empty_node, int, int>,
-                               tavl_node<empty_node, empty_node, 0, int, int>>,
+                std::is_same_v<
+                    tavl_insert_t<empty_node, int_v<0>, int>,
+                    tavl_node<empty_node, empty_node, 0, int_v<0>, int>>,
                 "tavl_insert for empty tree");
             static_assert(
                 std::is_same_v<
