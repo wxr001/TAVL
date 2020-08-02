@@ -983,6 +983,39 @@ namespace tavl
      */
     template <typename T1, typename T2, typename T3>
     using tavl_union_3 = tavl::tavl_union<T1, T2, T3>;
+    namespace impl
+    {
+        template <typename K, typename V>
+        struct tavl_size_node
+        {
+            using type = std::integral_constant<std::size_t, 1>;
+        };
+        template <typename L, typename R, typename C>
+        struct tavl_size_merger
+        {
+            using type = std::integral_constant<std::size_t,
+                                                L::value + R::value + C::value>;
+        };
+    } // namespace impl
+    /**
+     * @brief return the size of given tree T
+     * @tparam T tavl tree
+     */
+    template <Node T>
+    struct tavl_size
+    {
+        static constexpr std::size_t value =
+            tavl_for_each_t<T,
+                            impl::tavl_size_node,
+                            impl::tavl_size_merger,
+                            std::integral_constant<std::size_t, 0>>::value;
+    };
+    /**
+     * @brief return the size of given tree T
+     * @tparam T tavl tree
+     */
+    template <typename T>
+    inline constexpr std::size_t tavl_size_v = tavl_size<T>::value;
     template <typename Lhs, typename Rhs>
     struct tavl_is_same : std::is_same<Lhs, Rhs>
     {
@@ -1419,7 +1452,36 @@ namespace tavl
             static constexpr bool value = true;
         };
     } // namespace impl
-    // @brief specialization for TAVLs
+// @brief specialization for TAVLs
+#ifdef TAVL_IS_SAME_LEN_IMPL
+    template <Node    L1,
+              Node    R1,
+              int     H1,
+              KeyType K1,
+              typename V1,
+              Node    L2,
+              Node    R2,
+              int     H2,
+              KeyType K2,
+              typename V2>
+    struct tavl_is_same<tavl_node<L1, R1, H1, K1, V1>,
+                        tavl_node<L2, R2, H2, K2, V2>>
+    {
+    private:
+        using lhs = tavl_node<L1, R1, H1, K1, V1>;
+        using rhs = tavl_node<L2, R2, H2, K2, V2>;
+        template <typename L, typename R>
+        static std::bool_constant<(tavl_size_v<lhs> == tavl_size_v<rhs>)&&(
+            impl::comp_oneway<lhs, rhs>::value)>
+            test(L*);
+        template <typename L, typename R>
+        static std::false_type test(...);
+
+    public:
+        static constexpr bool value =
+            decltype(test<lhs, rhs>(static_cast<lhs*>(nullptr)))::value;
+    };
+#else
     template <Node    L1,
               Node    R1,
               int     H1,
@@ -1462,6 +1524,7 @@ namespace tavl
     public:
         static constexpr bool value = true;
     };
+#endif
     template <Node    L1,
               Node    R1,
               int     H1,
